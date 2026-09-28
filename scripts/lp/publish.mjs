@@ -28,9 +28,16 @@ async function api(action, body) {
     headers: {
       Authorization: `Bearer ${token}`,
       "Content-Type": "application/json",
+      ...(process.env.LP_PUBLISH_PROTECTION_BYPASS
+        ? {
+            "x-vercel-protection-bypass":
+              process.env.LP_PUBLISH_PROTECTION_BYPASS,
+          }
+        : {}),
     },
     body: body ? JSON.stringify(body) : undefined,
     signal: AbortSignal.timeout(30000),
+    redirect: "error",
   });
   const result = await res.json();
   if (!res.ok) throw Error(result.error || `API ${res.status}`);

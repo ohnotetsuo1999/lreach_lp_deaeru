@@ -56,3 +56,7 @@ flowchart LR
 - 既存Lreach本体のdevelop/mainへのマージと既存ドメイン・HTTPSの切替は、この発行スクリプトでは実行しない。
 
 `.lp-publish/` は依頼IDとデプロイ再開情報を保持します。同じ依頼の再送時に削除しないでください。番号予約後に止まっても、別番号でやり直さず状態ファイルから続行します。
+
+### 保護されたPreviewの回答API接続
+
+新規発行LPの回答は `/api/lp/v1/submissions/` のサーバー側プロキシを通します。管理者がVercel Preview環境の `LREACH_BACKEND_PROTECTION_BYPASS` にバックエンドのAutomation Bypassを設定してください。ブラウザ用変数には設定しません。採番CLIでは同じ秘密情報を `LP_PUBLISH_PROTECTION_BYPASS` に設定します。どちらもリポジトリへ保存しません。旧LPの互換APIと本番ドメインの移管は別途検証します。

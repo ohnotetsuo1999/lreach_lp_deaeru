@@ -9,7 +9,7 @@ const nextConfig = {
     if(!base)throw new Error('NEXT_PUBLIC_LREACH_BACKEND_URL is required');
     const url=new URL(base);
     if(url.protocol!=='https:' && !(url.protocol==='http:' && ['127.0.0.1','localhost'].includes(url.hostname)))throw new Error('Backend must use HTTPS');
-    return [{source:'/api/:path*',destination:url.origin+'/api/:path*'}];
+    return { fallback: [{source:'/api/:path*',destination:url.origin+'/api/:path*'}] };
   },
   trailingSlash: true,
   reactStrictMode: false,
