@@ -7,9 +7,9 @@
 1. Node.js 24で `npm ci --legacy-peer-deps` で依存をインストールする。
 2. `.env.example` を参考にLreach backendのURLを設定する。DBやSlackのキーは置かない。
 3. `npm run dev` で表示を確認する。
-4. Codex／Claudeで「lp-saibanを使って、テンプレートから新しいLPを発行して」と依頼する。
+4. Codex／Claudeで「create-lpを使って、テンプレートから新しいLPを発行して」と依頼する。
 
-[発行Skill](.agents/skills/lp-saiban/SKILL.md) は、番号の自動／手動指定、登録済み広告タグの選択、デザイン作成、Vercel Preview発行を案内します。新規LPの回答形式は99Y互換です。
+[発行Skill](.agents/skills/create-lp/SKILL.md) は、採番方法 → GTMタグ → LINEシナリオ → デザインの進め方を選択肢UIで案内し、作成したLPをVercel Previewへ発行します。スキル名は `create-lp`（表示名「LP作成」）、内部CLI名は引き続き `lp-saiban` です。新規LPの回答形式は99Y互換です。
 
 ## ブランチ運用
 
@@ -19,11 +19,11 @@ mainへのpushと本番公開は別です。発行スクリプトはVercel Previ
 
 ## 自動発行
 
-Codex／Claudeに「lp-saibanで、特徴カードのテンプレート・Meta広告用・自動採番でLPを作って」と依頼します。AIが名称・媒体・デザイン・タグを確認し、仕様ファイルの作成から実行します。利用者にDB編集は不要です。初回のAPI・権限設定は管理者が行います。
+Codex／Claudeに「create-lpで、特徴カードのテンプレート・Meta広告用・自動採番でLPを作って」と依頼します。AIが採番方法、広告タグ（GTM）、LINEシナリオを選択肢UIで1問ずつ確認し、その後に「デザイン添付／HTMLファイル／チャットで一緒に作成」を選んでもらいます。指定済みの項目は聞き直さず、内容が決まったら仕様ファイルの作成から実行します。利用者にDB編集は不要です。初回のAPI・権限設定は管理者が行います。
 
 ```mermaid
 flowchart LR
-  A[対話でデザインとタグを選択] --> B[テンプレートから作成]
+  A[採番方法 → GTM → LINEを選択] --> B[デザイン添付・HTML・会話で作成]
   B --> C[Lreach APIで番号予約]
   C --> D[タグ・フォームを組み込み]
   D --> E[ビルド・mainへpush]
