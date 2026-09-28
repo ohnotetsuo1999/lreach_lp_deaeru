@@ -1,0 +1,4 @@
+interface:
+  display_name: "LP作成・採番・発行"
+  short_description: "テンプレートからデザインを作り、採番と広告タグ設定からPreview発行まで進める"
+  default_prompt: "$lp-saibanで、テンプレートから自動採番・広告タグ設定付きのLPを作って発行してください。"

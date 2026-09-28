@@ -16,6 +16,7 @@ jobs:
           cache: npm
       - run: npm ci --legacy-peer-deps
       - run: node --check scripts/lp/publish.mjs && node --check scripts/lp/render.mjs
+      - run: npm run test:publisher
       - run: npm run build
         env:
           NEXT_PUBLIC_LREACH_BACKEND_URL: http://127.0.0.1:4320

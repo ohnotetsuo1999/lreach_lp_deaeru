@@ -1,0 +1,5 @@
+.env
+.env.*
+.lp-publish
+.git
+tests

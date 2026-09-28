@@ -7,15 +7,39 @@
 1. `npm ci --legacy-peer-deps` で依存をインストールする。
 2. `.env.example` を参考にLreach backendのURLを設定する。DBやSlackのキーは置かない。
 3. `npm run dev` で表示を確認する。
-4. Codex／Claudeで「publish-lreach-lpを使って、新しいLPを発行して」と依頼する。
+4. Codex／Claudeで「lp-saibanを使って、テンプレートから新しいLPを発行して」と依頼する。
 
-[発行Skill](.agents/skills/publish-lreach-lp/SKILL.md) は、番号の自動／手動指定、登録済み広告タグの選択、デザイン作成、Vercel Preview発行を案内します。新規LPの回答形式は99Y互換です。
+[発行Skill](.agents/skills/lp-saiban/SKILL.md) は、番号の自動／手動指定、登録済み広告タグの選択、デザイン作成、Vercel Preview発行を案内します。新規LPの回答形式は99Y互換です。
 
 ## ブランチ運用
 
 このリポジトリは `main` のみで運用します。LPの変更を検証してmainへコミット・pushすると、GitHub Actionsでビルドを確認します。developやLPごとの作業ブランチは作成しません。既存Lreach本体のブランチ運用は別管理です。
 
 mainへのpushと本番公開は別です。発行スクリプトはVercel Previewを作成します。GitHubとVercelの自動連携を追加する際は、mainへのpushが本番デプロイになる設定かを管理者が確認してください。
+
+## 自動発行
+
+Codex／Claudeに「lp-saibanで、特徴カードのテンプレート・Meta広告用・自動採番でLPを作って」と依頼します。AIが名称・媒体・デザイン・タグを確認し、仕様ファイルの作成から実行します。利用者にDB編集は不要です。初回のAPI・権限設定は管理者が行います。
+
+```mermaid
+flowchart LR
+  A[対話でデザインとタグを選択] --> B[テンプレートから作成]
+  B --> C[Lreach APIで番号予約]
+  C --> D[タグ・フォームを組み込み]
+  D --> E[ビルド・mainへpush]
+  E --> F[Vercel Preview発行]
+  F --> G[APIでURLを台帳登録]
+```
+
+- `npm run lp-saiban -- templates`: デザイン候補を表示。
+- `npm run lp-saiban -- options`: APIからタグ・既存LP・対応する挙動を取得。
+- `npm run lp-saiban -- init .lp-publish/draft-example.json`: 対話内容からデザイン・仕様を生成。
+- `npm run lp-saiban -- issue specs/example.json`: 採番からPreview URL登録まで実行。
+- `npm run test:publisher`: ローカルAPI・Git・Vercel代替を使って発行と失敗後の再開を検証。実環境に採番・通知しない。
+
+`LP_PUBLISH_API_URL` と `LP_PUBLISH_TOKEN` はコマンドの実行環境だけに設定します。ブラウザ用の環境変数にはしません。テンプレート2種類と添付HTMLに対応し、フォームの挙動は99Y互換です。登録済みのGTM・Meta・TikTok・Google Ads・管理者確認済みのその他タグから選択できます。
+
+同じ `issue` の再実行は発行状態に応じて再開します。結果不明のデプロイは自動でやり直しません。登録済みLPのデザイン更新は新規採番フローとは別に扱います。発行コマンドはmainを自動pushするため、VercelのGit自動連携があるプロジェクトでは停止します（main pushによる意図しない本番公開を防ぐため）。
 
 ## 既存LP
 

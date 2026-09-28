@@ -1,7 +1,7 @@
 # Lreach LP の作業境界
 
 - 日本語で簡潔に報告する。呼称はLreach。
-- 新規LP発行は `.agents/skills/publish-lreach-lp/SKILL.md` と共通スクリプトを使う。
+- 新規LP発行は `.agents/skills/lp-saiban/SKILL.md` と共通スクリプトを使う。
 - LPデザイン・表示を編集する。回答の保存契約、認証、通知先、シナリオはLreach backend側の管理対象。
 - DBキーやSlack/LINEトークンをこのリポジトリに置かない。
 - 利用者の未コミット変更を保持する。依頼IDを変更して不明な送信・採番を再実行しない。

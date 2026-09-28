@@ -8,7 +8,9 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "verify": "node scripts/verify-migration.mjs"
+    "verify": "node scripts/verify-migration.mjs",
+    "lp-saiban": "node scripts/lp/saiban.mjs",
+    "test:publisher": "node --test tests/lp/*.test.mjs"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.4.2",
