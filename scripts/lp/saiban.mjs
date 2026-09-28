@@ -5,6 +5,7 @@ import { dirname, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
 import { renderTemplate, templates } from "./templates.mjs";
+import { loadPublisherRuntime } from "./runtime.mjs";
 
 const [action, input] = process.argv.slice(2);
 const root = process.cwd();
@@ -161,6 +162,7 @@ if (action === "templates") {
   call("options");
   console.log(JSON.stringify({ templates }, null, 2));
 } else if (action === "issue") {
+  await loadPublisherRuntime();
   const spec = await readJson(resolve(input)),
     slug = slugOf(spec),
     statePath = resolve(".lp-publish", slug + ".json");

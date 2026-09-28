@@ -6,12 +6,14 @@ import { access, mkdir, readFile, writeFile } from "node:fs/promises";
 import { dirname, resolve } from "node:path";
 
 import { renderPublishedPage } from "./render.mjs";
+import { ensurePublisherProject, loadPublisherRuntime } from "./runtime.mjs";
 
 const root = process.cwd(),
   [action, input] = process.argv.slice(2);
 const run = (file, args) =>
   execFileSync(file, args, { cwd: root, encoding: "utf8" }).trim();
 async function api(action, body) {
+  await loadPublisherRuntime();
   const base = new URL(process.env.LP_PUBLISH_API_URL || "");
   if (
     base.protocol !== "https:" &&
@@ -48,9 +50,7 @@ async function save(path, data) {
   await writeFile(path, JSON.stringify(data, null, 2) + "\n");
 }
 async function verifyPreviewProject() {
-  const link = JSON.parse(
-    await readFile(resolve(".vercel/project.json"), "utf8")
-  );
+  const link = await ensurePublisherProject(root);
   if (
     !/^prj_[A-Za-z0-9]+$/.test(link.projectId) ||
     !/^team_[A-Za-z0-9]+$/.test(link.orgId)

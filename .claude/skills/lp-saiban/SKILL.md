@@ -9,8 +9,8 @@ LP専用リポジトリのルートで実行する。デザインはこのリポ
 
 ## 必要な初期設定
 
-- Node.js、npm依存、GitHubの書き込み権限、Vercel CLIの認証とLP専用プロジェクトへのlink。
-- 実行環境に `LP_PUBLISH_API_URL`、`LP_PUBLISH_TOKEN`。LPのビルド環境に `NEXT_PUBLIC_LREACH_BACKEND_URL`。値をチャット・Git・HTMLに出さない。
+- Node.js、npm依存、GitHubの書き込み権限、Vercel CLIへのログインとLP専用プロジェクトへのアクセス権。端末のlinkはCLIが自動作成する。
+- URL・トークンは入力不要。CLIが本番backendへ自動接続し、VercelのLPプロジェクトから限定トークンだけをメモリ上に取得する。認証失敗時はVercelログイン・LPプロジェクト権限を確認し、秘密の値を利用者に質問しない。別環境を手動指定する場合だけ `LP_PUBLISH_API_URL` と `LP_PUBLISH_TOKEN` を両方設定する。
 - backendのDB migration、既存番号の棚卸し、広告主確認済みタグの登録。未設定のAPIや未完了の台帳をローカル採番で代用しない。
 - mainのみで運用する。自動発行はPreviewまで。VercelのGit自動連携があるとmain pushで本番公開されうるため、このPreview用CLIはGit自動連携のないプロジェクトで使う。
 
