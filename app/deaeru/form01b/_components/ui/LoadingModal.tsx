@@ -1,0 +1,34 @@
+import classNames from "classnames";
+
+type Props = {
+  isLoading: boolean;
+};
+
+export function LoadingModal({ isLoading }: Props) {
+  const overlayClass = classNames(
+    "fixed inset-0 z-50 flex flex-col items-center justify-center transition-all duration-300 ease-in-out",
+    {
+      "pointer-events-auto bg-black/60 opacity-100": isLoading,
+      "pointer-events-none opacity-0": !isLoading,
+    }
+  );
+
+  return (
+    <div className={overlayClass}>
+      <div className="mx-4 max-w-sm rounded-2xl bg-white p-8 shadow-2xl">
+        <div className="flex flex-col items-center gap-y-6">
+          <div className="relative size-16">
+            <span className="absolute left-0 top-0 size-full rounded-full border-4 border-green-100" />
+            <span className="absolute left-0 top-0 size-full animate-spin rounded-full border-4 border-green-500 border-t-transparent" />
+          </div>
+          <h3 className="text-center text-xl font-bold text-gray-800">
+            予約処理中
+          </h3>
+          <p className="text-center text-sm leading-relaxed text-gray-600">
+            面談予約を処理しています...
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+}

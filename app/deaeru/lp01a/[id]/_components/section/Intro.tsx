@@ -1,0 +1,1414 @@
+"use client";
+
+import { useEffect, useRef, useState, type TouchEvent } from "react";
+import Link from "next/link";
+import Script from "next/script";
+import { useSearchParams } from "next/navigation";
+import {
+  ArrowRight,
+  CheckCircle2,
+  ChevronDown,
+  Clock,
+  Crown,
+  MessageCircle,
+  MessageSquare,
+  ShieldCheck,
+  Star,
+} from "lucide-react";
+
+const LP_KEY = "deaeru-lp01a";
+const REFERRER_STORAGE_KEY = "deaeru_lp_referrer_url";
+const GTM_ID = "GTM-W7S9ZNV8";
+
+const useMediaQuery = (query: string) => {
+  const getMatches = () => {
+    if (typeof window === "undefined") return false;
+    return window.matchMedia(query).matches;
+  };
+
+  const [matches, setMatches] = useState(getMatches);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return undefined;
+    const mediaQueryList = window.matchMedia(query);
+    const handler = (event: MediaQueryListEvent) => setMatches(event.matches);
+
+    setMatches(mediaQueryList.matches);
+    if (mediaQueryList.addEventListener) {
+      mediaQueryList.addEventListener("change", handler);
+      return () => mediaQueryList.removeEventListener("change", handler);
+    }
+    mediaQueryList.onchange = handler;
+    return () => {
+      mediaQueryList.onchange = null;
+    };
+  }, [query]);
+
+  return matches;
+};
+
+const buildReferrerUrl = (url: string) => {
+  try {
+    const parsedUrl = new URL(url);
+    if (!parsedUrl.searchParams.has("lp")) {
+      parsedUrl.searchParams.set("lp", LP_KEY);
+    }
+    return parsedUrl.toString();
+  } catch (error) {
+    return url;
+  }
+};
+
+interface Props {
+  updateIsCta1Submitted: (isCta1Submitted: boolean) => void;
+  updateIsIntroVisible: (isIntroVisible: boolean) => void;
+}
+
+export function Intro({ updateIsCta1Submitted, updateIsIntroVisible }: Props) {
+  const [scrolled, setScrolled] = useState(false);
+  const [showFixedCTA, setShowFixedCTA] = useState(false);
+  const [weeklyDiagnosisCount, setWeeklyDiagnosisCount] = useState<number | null>(
+    null
+  );
+  const searchParams = useSearchParams();
+  const ctaButtonRef = useRef<HTMLButtonElement>(null);
+  const touchStartYRef = useRef<number | null>(null);
+  const isSpSmall = useMediaQuery("(max-width: 389px)");
+  const isSpLarge = useMediaQuery("(min-width: 415px)");
+
+  useEffect(() => {
+    try {
+      const referrerUrl = buildReferrerUrl(window.location.href);
+      window.localStorage.setItem(REFERRER_STORAGE_KEY, referrerUrl);
+    } catch (error) {
+      // localStorageが使えない場合は何もしない
+    }
+  }, []);
+
+  useEffect(() => {
+    try {
+      const getWeekKey = () => {
+        const now = new Date();
+        const year = now.getFullYear();
+        const firstDay = new Date(year, 0, 1);
+        const pastDaysOfYear = (now.getTime() - firstDay.getTime()) / 86400000;
+        const week = Math.ceil((pastDaysOfYear + firstDay.getDay() + 1) / 7);
+        return `${year}-w${week}`;
+      };
+
+      const STORAGE_KEY = "deaeru_weeklyDiagnosisCount_v1";
+      const currentWeekKey = getWeekKey();
+
+      const stored = window.localStorage.getItem(STORAGE_KEY);
+      if (stored) {
+        const parsed = JSON.parse(stored) as {
+          weekKey: string;
+          value: number;
+        };
+        if (parsed.weekKey === currentWeekKey && typeof parsed.value === "number") {
+          setWeeklyDiagnosisCount(parsed.value);
+          return;
+        }
+      }
+
+      const min = 350;
+      const max = 700;
+      const value = Math.floor(Math.random() * (max - min + 1)) + min;
+
+      setWeeklyDiagnosisCount(value);
+      window.localStorage.setItem(
+        STORAGE_KEY,
+        JSON.stringify({ weekKey: currentWeekKey, value })
+      );
+    } catch (e) {
+      if (weeklyDiagnosisCount == null) {
+        setWeeklyDiagnosisCount(500);
+      }
+    }
+  }, [weeklyDiagnosisCount]);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      setScrolled(window.scrollY > 30);
+    };
+    window.addEventListener("scroll", handleScroll);
+    handleScroll();
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
+
+  useEffect(() => {
+    const target = ctaButtonRef.current;
+    if (!target) return undefined;
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        setShowFixedCTA(!entry.isIntersecting);
+      },
+      { threshold: 0 }
+    );
+
+    observer.observe(target);
+
+    return () => {
+      observer.unobserve(target);
+    };
+  }, []);
+
+  useEffect(() => {
+    const source = searchParams.get("source") || searchParams.get("utm_source");
+    const medium = searchParams.get("medium") || searchParams.get("utm_medium");
+    const campaign =
+      searchParams.get("campaign") || searchParams.get("utm_campaign");
+    const adId = searchParams.get("ad_id");
+
+    if (source || medium || campaign || adId) {
+      const trackingData = {
+        source: source || "direct",
+        medium: medium || null,
+        campaign: campaign || null,
+        adId: adId || null,
+        timestamp: new Date().toISOString(),
+        url: window.location.href,
+      };
+
+      localStorage.setItem("ad_tracking", JSON.stringify(trackingData));
+
+      const history = JSON.parse(
+        localStorage.getItem("ad_tracking_history") || "[]"
+      ) as typeof trackingData[];
+      history.push(trackingData);
+      if (history.length > 100) history.shift();
+      localStorage.setItem("ad_tracking_history", JSON.stringify(history));
+    }
+  }, [searchParams]);
+
+  const scrollToSection = (id: string) => {
+    const element = document.getElementById(id);
+    if (element) {
+      const headerOffset = 80;
+      const elementPosition = element.getBoundingClientRect().top;
+      const offsetPosition = elementPosition + window.pageYOffset - headerOffset;
+      window.scrollTo({ top: offsetPosition, behavior: "smooth" });
+    }
+  };
+
+  const scrollToTop = () => {
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
+  const handleCtaClick = () => {
+    updateIsCta1Submitted(true);
+    updateIsIntroVisible(false);
+    window.scrollTo({ top: 0, behavior: "auto" });
+  };
+
+  const handleCtaTouchStart = (event: TouchEvent<HTMLButtonElement>) => {
+    touchStartYRef.current = event.touches[0].clientY;
+  };
+
+  const handleCtaTouchEnd = (event: TouchEvent<HTMLButtonElement>) => {
+    const touchEndY = event.changedTouches[0].clientY;
+    const touchStartY = touchStartYRef.current;
+    if (touchStartY !== null && Math.abs(touchEndY - touchStartY) > 8) {
+      touchStartYRef.current = null;
+      return;
+    }
+    touchStartYRef.current = null;
+    event.preventDefault();
+    handleCtaClick();
+  };
+
+  const headerClassName = scrolled
+    ? "fixed w-full z-50 transition-all duration-300 border-b bg-white/95 backdrop-blur-sm shadow-sm border-gray-100 pt-3 pb-0"
+    : "fixed w-full z-50 transition-all duration-300 border-b bg-white border-transparent pt-3 pb-0";
+
+  return (
+    <div className="min-h-screen bg-gradient-to-b from-green-50/30 via-white to-white text-[#333] overflow-x-hidden">
+      <Script id="deaeru-gtm" strategy="afterInteractive">{`
+(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
+new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
+j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
+'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
+})(window,document,'script','dataLayer','${GTM_ID}');
+      `}</Script>
+      <noscript>
+        <iframe
+          src={`https://www.googletagmanager.com/ns.html?id=${GTM_ID}`}
+          height="0"
+          width="0"
+          style={{ display: "none", visibility: "hidden" }}
+        />
+      </noscript>
+
+      <style jsx global>{`
+        @keyframes shimmer {
+          0% {
+            transform: translateX(-100%) skewX(-12deg);
+          }
+          100% {
+            transform: translateX(200%) skewX(-12deg);
+          }
+        }
+      `}</style>
+
+      <header id="header" className={headerClassName}>
+        <div className="container mx-auto px-4 md:px-8 flex justify-between items-center">
+          <div className="flex items-center gap-2 cursor-pointer" onClick={scrollToTop}>
+            <img
+              src="/deaeru-logo.png"
+              alt="出会えるエージェント"
+              className="h-10 w-auto object-contain"
+            />
+          </div>
+
+          <nav className="hidden md:flex items-center gap-8 text-sm font-bold">
+            <button
+              onClick={() => scrollToSection("problem")}
+              className="text-gray-600 hover:text-[#00C853] transition-colors relative group py-2"
+            >
+              悩み
+              <span className="absolute bottom-0 left-0 w-0 h-0.5 bg-[#00C853] transition-all duration-300 group-hover:w-full"></span>
+            </button>
+            <button
+              onClick={() => scrollToSection("solution")}
+              className="text-gray-600 hover:text-[#00C853] transition-colors relative group py-2"
+            >
+              解決策
+              <span className="absolute bottom-0 left-0 w-0 h-0.5 bg-[#00C853] transition-all duration-300 group-hover:w-full"></span>
+            </button>
+            <button
+              onClick={() => scrollToSection("features")}
+              className="text-gray-600 hover:text-[#00C853] transition-colors relative group py-2"
+            >
+              選ばれる理由
+              <span className="absolute bottom-0 left-0 w-0 h-0.5 bg-[#00C853] transition-all duration-300 group-hover:w-full"></span>
+            </button>
+            <a
+              href="/media"
+              className="text-gray-600 hover:text-[#00C853] transition-colors relative group py-2"
+            >
+              出会えるマガジン
+              <span className="absolute bottom-0 left-0 w-0 h-0.5 bg-[#00C853] transition-all duration-300 group-hover:w-full"></span>
+            </a>
+            <button
+              type="button"
+              onClick={handleCtaClick}
+              onTouchStart={handleCtaTouchStart}
+              onTouchEnd={handleCtaTouchEnd}
+              className="touch-manipulation bg-gradient-to-r from-orange-500 to-orange-600 text-white px-8 py-3 rounded-full hover:from-orange-600 hover:to-orange-700 transition-all hover:-translate-y-0.5 text-sm font-bold tracking-wide"
+            >
+              無料相談スタート
+            </button>
+          </nav>
+        </div>
+      </header>
+
+      <section className="px-3 md:px-6 lg:px-8 pt-24 sm:pt-28 md:pt-10 lg:pt-[80px] pb-12 md:pb-16 lg:pb-20 relative overflow-hidden min-h-screen flex items-center justify-center">
+        <div className="absolute inset-0 bg-gradient-to-br from-green-50 via-green-100/50 to-emerald-50/60 -z-10"></div>
+        <div className="absolute top-0 right-0 w-[70%] h-full bg-gradient-to-bl from-green-100/70 via-green-50/40 to-transparent -z-10"></div>
+        <div className="absolute bottom-0 left-0 w-[60%] h-[60%] bg-gradient-to-tr from-emerald-100/50 via-green-50/30 to-transparent -z-10"></div>
+        <div className="absolute bottom-24 left-8 w-64 h-64 bg-green-200/50 opacity-40 rounded-full blur-3xl -z-10"></div>
+        <div
+          className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] rounded-full -z-10"
+          style={{
+            background:
+              "radial-gradient(circle, rgba(0, 200, 83, 0.15) 0%, transparent 70%)",
+          }}
+        ></div>
+
+        <div className="container mx-auto max-w-7xl w-full relative z-10 px-6 sm:px-8 md:px-12 lg:px-16">
+          <div className="flex flex-col lg:flex-row items-center justify-center gap-6 md:gap-8 lg:gap-12 xl:gap-16 relative h-full">
+            <div className="w-full lg:w-1/2 space-y-2 sm:space-y-3 md:space-y-4 lg:space-y-4 xl:space-y-4 text-center lg:text-left relative z-30 flex flex-col items-center justify-center lg:items-start">
+              <h1 className="text-[2.75rem] sm:text-5xl md:text-5xl lg:text-6xl xl:text-[4.5rem] font-extrabold leading-[1.1] sm:leading-[1.15] md:leading-[1.1] lg:leading-[1.05] text-gray-900 tracking-tight relative z-30">
+                <span className="sr-only">出会えるエージェント</span>
+                <span className="text-[2.75rem] sm:text-5xl md:text-5xl lg:text-6xl xl:text-[4.5rem] text-[#00C853] block mb-2 md:mb-3">
+                  たった1分で
+                </span>
+                出会える。<br />
+                <span className="text-[#00C853]">いい人</span>に、<br />
+                <span className="text-[#00C853]">いい求人</span>に。
+              </h1>
+
+              <div className="lg:hidden absolute inset-y-0 left-0 right-0 pointer-events-none z-0">
+                <div
+                  className={
+                    isSpSmall
+                      ? "absolute top-4 left-0 bg-white rounded-xl shadow-lg border border-gray-100 p-2.5 w-[80px] transform -translate-y-1/2 -translate-x-[calc(5%+30px)] -mt-2 -rotate-[10deg] pointer-events-auto"
+                      : isSpLarge
+                        ? "absolute top-4 left-0 bg-white rounded-xl shadow-lg border border-gray-100 p-2.5 w-[80px] transform -translate-y-1/2 -translate-x-[calc(25%+30px)] -mt-8 -rotate-[10deg] pointer-events-auto"
+                        : "absolute top-4 left-0 bg-white rounded-xl shadow-lg border border-gray-100 p-2.5 w-[80px] transform -translate-y-1/2 -translate-x-[calc(15%+30px)] -mt-6 -rotate-[10deg] pointer-events-auto"
+                  }
+                >
+                  <div className="absolute -top-2 -right-1 bg-[#FFD600] text-gray-900 text-[7px] font-bold px-1.5 py-0.5 rounded-full shadow-sm">
+                    98%
+                  </div>
+                  <div className="flex flex-col items-center gap-1">
+                    <div className="w-8 h-8 rounded-full bg-gradient-to-br from-green-100 to-emerald-200 border border-white shadow-sm flex items-center justify-center overflow-hidden">
+                      <img
+                        src="/deaeru-person1.png"
+                        alt="佐藤 美咲"
+                        className="w-full h-full object-cover"
+                        loading="lazy"
+                      />
+                    </div>
+                    <div className="text-center">
+                      <div className="flex gap-0.5 justify-center">
+                        {[...Array(5)].map((_, i) => (
+                          <Star key={i} size={5} className="fill-[#FFD600] stroke-none" />
+                        ))}
+                      </div>
+                      <p className="text-[9px] font-bold text-gray-800 mt-0.5">
+                        佐藤 美咲
+                      </p>
+                      <p className="text-[7px] text-[#00C853] font-bold">
+                        関西特化
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                <div
+                  className={
+                    isSpSmall
+                      ? "absolute top-4 right-0 bg-white rounded-xl shadow-lg border border-gray-100 p-2.5 w-[80px] transform -translate-y-1/2 translate-x-[calc(5%+30px)] -mt-2 rotate-[10deg] pointer-events-auto"
+                      : isSpLarge
+                        ? "absolute top-4 right-0 bg-white rounded-xl shadow-lg border border-gray-100 p-2.5 w-[80px] transform -translate-y-1/2 translate-x-[calc(25%+30px)] -mt-8 rotate-[10deg] pointer-events-auto"
+                        : "absolute top-4 right-0 bg-white rounded-xl shadow-lg border border-gray-100 p-2.5 w-[80px] transform -translate-y-1/2 translate-x-[calc(15%+30px)] -mt-6 rotate-[10deg] pointer-events-auto"
+                  }
+                >
+                  <div className="absolute -top-2 -left-1 bg-[#00C853] text-white text-[7px] font-bold px-1.5 py-0.5 rounded-full shadow-sm">
+                    97%
+                  </div>
+                  <div className="flex flex-col items-center gap-1">
+                    <div className="w-8 h-8 rounded-full bg-gradient-to-br from-green-100 to-emerald-200 border border-white shadow-sm flex items-center justify-center overflow-hidden">
+                      <img
+                        src="/deaeru-person2.png"
+                        alt="鈴木 大和"
+                        className="w-full h-full object-cover"
+                        loading="lazy"
+                      />
+                    </div>
+                    <div className="text-center">
+                      <div className="flex gap-0.5 justify-center">
+                        {[...Array(5)].map((_, i) => (
+                          <Star key={i} size={5} className="fill-[#FFD600] stroke-none" />
+                        ))}
+                      </div>
+                      <p className="text-[9px] font-bold text-gray-800 mt-0.5">
+                        鈴木 大和
+                      </p>
+                      <p className="text-[7px] text-[#00C853] font-bold">
+                        不動産特化
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex flex-col md:flex-row items-center gap-2 md:gap-3 mx-auto lg:mx-0 w-full lg:w-auto">
+                <div className="bg-white/95 backdrop-blur-sm rounded-xl border border-yellow-200/60 shadow-sm px-3 py-2.5 md:px-3.5 md:py-3 hover:shadow-md transition-all max-w-xs">
+                  <div className="flex items-center gap-2.5">
+                    <div className="bg-gradient-to-br from-yellow-400 to-yellow-500 p-1.5 rounded-lg flex-shrink-0">
+                      <Crown size={14} className="sm:w-4 sm:h-4 text-white" />
+                    </div>
+                    <div className="flex-1">
+                      <p className="text-xs md:text-sm font-semibold text-gray-800 leading-tight">
+                        <span className="block">
+                          ユーザーアンケート満足度が
+                        </span>
+                        <span className="block">
+                          高いエージェントのみご紹介
+                        </span>
+                      </p>
+                    </div>
+                  </div>
+                </div>
+                <div className="bg-white/95 backdrop-blur-sm rounded-xl border border-blue-200/60 shadow-sm px-3 py-2.5 md:px-3.5 md:py-3 hover:shadow-md transition-all max-w-xs">
+                  <div className="flex items-center gap-2.5">
+                    <div className="bg-gradient-to-br from-blue-500 to-blue-600 p-1.5 rounded-lg flex-shrink-0">
+                      <ShieldCheck size={14} className="sm:w-4 sm:h-4 text-white" />
+                    </div>
+                    <div className="flex-1">
+                      <p className="text-xs md:text-sm font-semibold text-blue-700 leading-tight">
+                        <span className="hidden md:inline">
+                          東証上場・UUUM親会社が出資
+                          <br />
+                          安心安全の運営体制
+                        </span>
+                        <span className="md:hidden">
+                          東証上場・UUUM親会社が出資
+                          <br />
+                          安心安全の運営体制
+                        </span>
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="space-y-1 max-w-xl mx-auto lg:mx-0">
+                <p className="text-sm text-gray-700 leading-relaxed">
+                  あなたの人生を左右する
+                  <span className="text-gray-900 font-semibold">転職</span>
+                </p>
+                <p className="text-sm text-gray-700 leading-relaxed">
+                  だからこそ信頼できるパートナーを見つけてください
+                </p>
+                <p className="text-sm text-gray-700 leading-relaxed">
+                  あなたにどんなエージェントが合うのか
+                </p>
+                <p className="text-sm text-gray-700 leading-relaxed">
+                  まずは
+                  <span className="text-gray-900 font-semibold">
+                    診断してみませんか？
+                  </span>
+                </p>
+              </div>
+
+              <div className="pt-0.5 md:pt-1 lg:pt-1.5 space-y-1 md:space-y-1.5">
+                <div className="space-y-1.5 md:space-y-2">
+                  <div className="flex flex-col items-center gap-0">
+                    {weeklyDiagnosisCount && (
+                      <div className="inline-flex items-center justify-center gap-1.5 bg-white px-3 py-1.5 rounded-lg shadow-md border border-gray-200 text-[10px] sm:text-xs text-gray-800 w-auto mx-auto text-center">
+                        <span className="w-2 h-2 rounded-full bg-[#00C853] animate-pulse"></span>
+                        <span>
+                          今週{" "}
+                          <span className="font-bold text-[#00C853]">
+                            {weeklyDiagnosisCount.toLocaleString()}
+                          </span>{" "}
+                          人が診断しました
+                        </span>
+                      </div>
+                    )}
+                    <button
+                      type="button"
+                      ref={ctaButtonRef}
+                      onClick={handleCtaClick}
+                      onTouchStart={handleCtaTouchStart}
+                      onTouchEnd={handleCtaTouchEnd}
+                      className="touch-manipulation bg-gradient-to-r from-orange-500 to-orange-600 text-white px-8 sm:px-10 lg:px-12 py-3.5 sm:py-4 lg:py-5 rounded-full font-bold text-sm sm:text-base lg:text-lg transition-all flex items-center justify-center gap-2.5 w-full sm:w-auto mx-auto lg:mx-0 transform hover:-translate-y-1 hover:scale-[1.02] active:scale-[0.98] group relative overflow-hidden sm:whitespace-nowrap"
+                    >
+                      <span className="relative z-10">
+                        あなたに合うエージェントを<br className="sm:hidden" />診断する
+                      </span>
+                      <ArrowRight
+                        size={24}
+                        className="relative z-10 group-hover:translate-x-1 transition-transform"
+                      />
+                      <div
+                        className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent transform -skew-x-12 -translate-x-full animate-shimmer"
+                        style={{ animation: "shimmer 3s infinite" }}
+                      ></div>
+                    </button>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-4 text-sm text-gray-600 mb-4">
+                  <div className="flex items-center gap-1">
+                    <CheckCircle2 size={14} className="text-[#00C853]" />
+                    <span>利用料無料</span>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <Clock size={14} className="text-[#00C853]" />
+                    <span>1分で完了</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="hidden lg:block lg:w-1/2 px-2 sm:px-4 md:px-0 relative mt-0">
+              <div
+                className="relative z-10 max-w-md mx-auto"
+                style={{ minHeight: "450px", height: "100%", maxHeight: "550px" }}
+              >
+                <div className="absolute top-[6%] -left-2 md:-left-4 bg-white rounded-2xl md:rounded-3xl shadow-[0_25px_60px_-12px_rgba(0,0,0,0.15)] border border-gray-100 p-4 md:p-6 w-full z-0 transform -rotate-2 md:-rotate-3 hover:rotate-0 transition-transform duration-300 hover:shadow-[0_30px_70px_-12px_rgba(0,0,0,0.2)]">
+                  <div className="absolute -top-3 -left-3 bg-[#FFD600] text-gray-900 text-xs font-bold px-3 py-1.5 rounded-full shadow-md border-2 border-white transform -rotate-6">
+                    満足度 <span className="text-base">98.2</span>%
+                  </div>
+                  <div className="flex items-start gap-4 mb-4">
+                    <div className="w-16 h-16 rounded-full border-2 border-white shadow-md flex-shrink-0 overflow-hidden relative bg-gradient-to-br from-green-100 to-emerald-200">
+                      <img
+                        src="/deaeru-person1.png"
+                        alt="佐藤 美咲"
+                        className="w-full h-full object-cover relative z-10"
+                      />
+                      <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-green-100 to-emerald-200 person-illustration">
+                        <svg
+                          className="w-10 h-10 text-[#00C853]"
+                          viewBox="0 0 100 100"
+                          fill="none"
+                          xmlns="http://www.w3.org/2000/svg"
+                        >
+                          <circle
+                            cx="50"
+                            cy="35"
+                            r="15"
+                            fill="currentColor"
+                            opacity="0.8"
+                          />
+                          <path
+                            d="M25 85 Q25 65 50 65 Q75 65 75 85"
+                            stroke="currentColor"
+                            strokeWidth="8"
+                            fill="none"
+                            strokeLinecap="round"
+                            opacity="0.8"
+                          />
+                        </svg>
+                      </div>
+                    </div>
+                    <div>
+                      <div className="flex gap-0.5 mb-1.5">
+                        {[...Array(5)].map((_, i) => (
+                          <Star
+                            key={i}
+                            size={12}
+                            className="fill-[#FFD600] stroke-none"
+                          />
+                        ))}
+                      </div>
+                      <p className="text-xl font-bold text-gray-800 leading-tight">
+                        佐藤 美咲
+                      </p>
+                      <p className="text-[10px] text-gray-500 font-bold mt-0.5 bg-gray-100 inline-block px-2 py-0.5 rounded">
+                        不動産特化
+                      </p>
+                      <p className="text-[9px] text-gray-400 font-medium mt-1">
+                        株式会社これからキャリア
+                      </p>
+                    </div>
+                  </div>
+                  <div className="space-y-2 mb-4">
+                    <div className="bg-green-50 p-3 rounded-xl border border-green-100">
+                      <p className="text-[10px] font-bold text-[#00C853] mb-1.5 flex items-center gap-1">
+                        <MessageSquare size={10} className="fill-current" />
+                        エージェントからのコメント
+                      </p>
+                      <p className="text-[9px] text-gray-700 font-semibold leading-relaxed">
+                        「あなたの強みである
+                        <span className="underline decoration-green-300 decoration-2 underline-offset-2">
+                          営業力
+                        </span>
+                        を活かせる、一般非公開の不動産会社の求人が3件ございます。」
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex gap-2">
+                    <span className="flex-1 bg-gray-50 py-1.5 text-center text-[10px] font-bold text-gray-600 rounded-lg border border-gray-100">
+                      相性 ◎
+                    </span>
+                    <span className="flex-1 bg-gray-50 py-1.5 text-center text-[10px] font-bold text-gray-600 rounded-lg border border-gray-100">
+                      実績 豊富
+                    </span>
+                    <span className="flex-1 bg-gray-50 py-1.5 text-center text-[10px] font-bold text-gray-600 rounded-lg border border-gray-100">
+                      レス 早い
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section className="py-8 md:py-12 bg-gradient-to-br from-[#00C853] via-[#00B54B] to-[#009624] relative overflow-hidden">
+        <div className="absolute top-0 right-0 w-1/2 h-full bg-gradient-to-l from-white/10 to-transparent"></div>
+        <div className="absolute bottom-0 left-0 w-1/2 h-full bg-gradient-to-r from-white/10 to-transparent"></div>
+        <div className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-white/5 rounded-full blur-3xl pointer-events-none -z-10"></div>
+
+        <div className="container mx-auto px-4 md:px-8 max-w-5xl relative z-10">
+          <div className="space-y-5 md:space-y-7">
+            <div className="text-center">
+              <h2 className="text-3xl md:text-4xl lg:text-6xl font-black text-white leading-tight drop-shadow-lg">
+                <span className="md:hidden">出会えるエージェント<br />なら</span>
+                <span className="hidden md:inline">出会えるエージェントなら</span>
+              </h2>
+            </div>
+            <div className="max-w-3xl mx-auto text-center">
+              <p className="text-lg md:text-xl lg:text-2xl text-white font-bold leading-relaxed drop-shadow-md">
+                <span className="md:hidden">
+                  大手・上場企業から、
+                  <br />
+                  業界特化の専門エージェントまで。
+                  <br />
+                  約
+                  <span className="text-white text-3xl font-black inline-block mx-2">
+                    1,000名
+                  </span>
+                  の中から、
+                  <br />
+                  あなたに最適な
+                  <br />
+                  パートナーに出会える。
+                </span>
+                <span className="hidden md:inline">
+                  大手・上場企業から、業界特化の専門エージェントまで。
+                  <br />
+                  約
+                  <span className="text-white text-4xl font-black inline-block mx-2">
+                    1,000名
+                  </span>
+                  の中から、あなたに最適なパートナーに出会える。
+                </span>
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section
+        id="problem"
+        className="py-4 md:py-24 bg-[#F9FAFB] relative border-t border-gray-100 overflow-hidden"
+      >
+        <img
+          src="/Working-late-bro.svg"
+          alt=""
+          className="hidden md:block absolute right-0 top-0 w-32 sm:w-40 md:w-48 lg:w-64 xl:w-72 opacity-100 pointer-events-none select-none z-0"
+          aria-hidden="true"
+        />
+        <div className="container mx-auto px-4 max-w-6xl relative z-10">
+          <div className="text-center mb-8 md:mb-16">
+            <span className="text-[#00C853] font-bold text-sm tracking-wider uppercase block mb-2">
+              Problem
+            </span>
+            <h2 className="text-2xl md:text-3xl font-bold text-gray-800">
+              転職活動で
+              <br className="md:hidden" />
+              こんな
+              <span className="text-red-500 bg-red-50 px-1">失敗</span>
+              していませんか？
+            </h2>
+          </div>
+          <div className="hidden md:grid md:grid-cols-2 lg:grid-cols-4 gap-6 px-4 md:px-0">
+            {[
+              {
+                num: 1,
+                emoji: "📉",
+                title: "市場価値を知らない",
+                desc: "自分の「本当の市場価値」を知らないまま活動している",
+              },
+              {
+                num: 2,
+                emoji: "🔍",
+                title: "比較検討不足",
+                desc: "複数のエージェントを「比較検討」せず、視野が狭くなっている",
+              },
+              {
+                num: 3,
+                emoji: "🏢",
+                title: "内情を知らない",
+                desc: "企業の「内情」を知らずに応募し、イメージだけで選んでいる",
+              },
+              {
+                num: 4,
+                emoji: "🎯",
+                title: "対策不足",
+                desc: "対策不足のまま「本命企業」に応募し、チャンスを潰している",
+              },
+            ].map((item) => (
+              <div
+                key={item.num}
+                className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 hover:shadow-md transition-all duration-300 group"
+              >
+                <div className="flex items-center justify-between mb-4">
+                  <div className="w-10 h-10 bg-gray-100 rounded-full flex items-center justify-center text-gray-400 font-bold group-hover:bg-red-50 group-hover:text-red-500 transition-colors">
+                    {item.num}
+                  </div>
+                  <div className="text-2xl opacity-20 grayscale group-hover:grayscale-0 transition-all">
+                    {item.emoji}
+                  </div>
+                </div>
+                <h3 className="font-bold text-lg text-gray-900 mb-3">
+                  {item.title}
+                </h3>
+                <p className="text-sm text-gray-600 leading-relaxed font-medium">
+                  {item.desc}
+                </p>
+              </div>
+            ))}
+          </div>
+
+          <div className="md:hidden px-4">
+            <div className="grid grid-cols-2 gap-3">
+              {[
+                {
+                  num: 1,
+                  emoji: "📉",
+                  title: "市場価値を知らない",
+                  desc: "自分の「本当の市場価値」を知らないまま活動している",
+                },
+                {
+                  num: 2,
+                  emoji: "🔍",
+                  title: "比較検討不足",
+                  desc: "複数のエージェントを「比較検討」せず、視野が狭くなっている",
+                },
+                {
+                  num: 3,
+                  emoji: "🏢",
+                  title: "内情を知らない",
+                  desc: "企業の「内情」を知らずに応募し、イメージだけで選んでいる",
+                },
+                {
+                  num: 4,
+                  emoji: "🎯",
+                  title: "対策不足",
+                  desc: "対策不足のまま「本命企業」に応募し、チャンスを潰している",
+                },
+              ].map((item) => (
+                <div
+                  key={item.num}
+                  className="bg-white rounded-xl p-3 shadow-sm border border-gray-100"
+                >
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="w-7 h-7 bg-red-50 rounded-full flex items-center justify-center text-red-500 font-bold text-xs">
+                      {item.num}
+                    </div>
+                    <div className="text-lg">{item.emoji}</div>
+                  </div>
+                  <h3 className="font-bold text-xs text-gray-900 mb-1 leading-tight">
+                    {item.title}
+                  </h3>
+                  <p className="text-[10px] text-gray-600 leading-relaxed">
+                    {item.desc}
+                  </p>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+        <div
+          className="absolute bottom-0 left-0 w-full h-8 md:h-16 bg-white hidden md:block"
+          style={{
+            clipPath: "polygon(0 100%, 100% 100%, 100% 0, 0 100%)",
+          }}
+        ></div>
+      </section>
+
+      <section id="solution" className="py-8 md:py-24 bg-white relative overflow-hidden">
+        <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-b from-white via-green-50/20 to-white -z-10"></div>
+        <img
+          src="/Selecting-team-bro.svg"
+          alt=""
+          className="hidden md:block absolute left-0 top-0 w-32 sm:w-40 md:w-48 lg:w-64 xl:w-72 opacity-100 pointer-events-none select-none z-0"
+          aria-hidden="true"
+        />
+
+        <div className="container mx-auto px-4 max-w-6xl relative z-10">
+          <div className="text-center mb-8 md:mb-10">
+            <span className="text-[#00C853] font-bold text-sm tracking-wider uppercase block mb-2">
+              Solution
+            </span>
+            <h2 className="text-xl md:text-3xl lg:text-4xl font-extrabold text-gray-900 leading-tight mb-3">
+              これらの課題、
+              <br className="md:hidden" />
+              <span className="text-[#00C853]">出会えるエージェント</span>で
+              <br />
+              すべて解決できます
+            </h2>
+            <p className="text-gray-600 text-xs md:text-sm max-w-2xl mx-auto leading-relaxed">
+              <span className="md:hidden">
+                あなたに最適なエージェントとの
+                <br />
+                出会いが、転職活動のすべてを変えます
+              </span>
+              <span className="hidden md:inline">
+                あなたに最適なエージェントとの出会いが、転職活動のすべてを変えます
+              </span>
+            </p>
+          </div>
+
+          <div className="hidden md:grid md:grid-cols-2 gap-4 md:gap-6">
+            {[
+              {
+                emoji: "📈",
+                problem: "市場価値を知らない",
+                title: "本当の市場価値がわかる",
+                desc: "業界に精通したエージェントが、あなたのスキルや経験を客観的に分析。適正年収や市場での評価を正確に把握できます。",
+              },
+              {
+                emoji: "🔄",
+                problem: "比較検討不足",
+                title: "最適なエージェントを比較",
+                desc: "複数の優秀なエージェントから提案を受けられ、相性や専門性を比較検討。最も信頼できるパートナーを選べます。",
+              },
+              {
+                emoji: "🔓",
+                problem: "内情を知らない",
+                title: "企業の内情を事前に把握",
+                desc: "企業との太いパイプを持つエージェントが、社風・働き方・評価制度など、求人票には載らないリアルな情報を共有。",
+              },
+              {
+                emoji: "🏆",
+                problem: "対策不足",
+                title: "万全の対策で本命を勝ち取る",
+                desc: "書類添削・面接対策・条件交渉まで徹底サポート。本命企業への応募も、十分な準備を整えてから臨めます。",
+              },
+            ].map((item) => (
+              <div
+                key={item.title}
+                className="bg-gradient-to-br from-green-50 to-emerald-50/50 p-5 md:p-6 rounded-2xl border border-green-100 relative group hover:shadow-lg transition-all duration-300"
+              >
+                <div className="flex items-start gap-4">
+                  <div className="w-12 h-12 bg-[#00C853] rounded-xl flex items-center justify-center text-white flex-shrink-0 shadow-lg shadow-green-200/50">
+                    <span className="text-xl">{item.emoji}</span>
+                  </div>
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2 mb-2">
+                      <span className="text-xs font-bold text-red-500 bg-red-50 px-2 py-0.5 rounded line-through">
+                        {item.problem}
+                      </span>
+                      <ArrowRight size={14} className="text-[#00C853]" />
+                    </div>
+                    <h3 className="text-lg md:text-xl font-bold text-gray-900 mb-2">
+                      {item.title}
+                    </h3>
+                    <p className="text-sm text-gray-600 leading-relaxed">
+                      {item.desc}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          <div className="md:hidden px-4">
+            <div className="grid grid-cols-2 gap-3">
+              {[
+                {
+                  emoji: "📈",
+                  problem: "市場価値を知らない",
+                  title: "本当の市場価値がわかる",
+                  desc: "業界に精通したエージェントがスキルを客観的に分析",
+                },
+                {
+                  emoji: "🔄",
+                  problem: "比較検討不足",
+                  title: "最適なエージェントを比較",
+                  desc: "複数の優秀なエージェントから提案を受けられる",
+                },
+                {
+                  emoji: "🔓",
+                  problem: "内情を知らない",
+                  title: "企業の内情を事前に把握",
+                  desc: "求人票には載らないリアルな情報を共有",
+                },
+                {
+                  emoji: "🏆",
+                  problem: "対策不足",
+                  title: "万全の対策で本命を勝ち取る",
+                  desc: "書類添削・面接対策・条件交渉まで徹底サポート",
+                },
+              ].map((item) => (
+                <div
+                  key={item.title}
+                  className="bg-gradient-to-br from-green-50 to-emerald-50/50 p-3 rounded-xl border border-green-100"
+                >
+                  <div className="flex items-center gap-2 mb-2">
+                    <div className="w-8 h-8 bg-[#00C853] rounded-lg flex items-center justify-center text-white flex-shrink-0 shadow-sm">
+                      <span className="text-sm">{item.emoji}</span>
+                    </div>
+                    <span className="text-[9px] font-bold text-red-500 bg-red-50 px-1.5 py-0.5 rounded line-through">
+                      {item.problem}
+                    </span>
+                  </div>
+                  <h3 className="text-xs font-bold text-gray-900 mb-1 leading-tight">
+                    {item.title}
+                  </h3>
+                  <p className="text-[10px] text-gray-600 leading-relaxed">
+                    {item.desc}
+                  </p>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section
+        id="features"
+        className="py-4 md:py-24 bg-gray-50 border-t border-gray-200 relative overflow-hidden"
+      >
+        <div className="container mx-auto px-4 max-w-5xl w-[85%] md:w-full relative z-10">
+          <div className="text-center mb-8 md:mb-20">
+            <h2 className="text-3xl font-bold text-gray-800">
+              選ばれる<span className="text-[#00C853]">2つの理由</span>
+            </h2>
+            <div className="w-16 h-1 bg-[#00C853] mx-auto mt-4 rounded-full"></div>
+          </div>
+          <div className="space-y-24">
+            <div className="flex flex-col md:flex-row items-center gap-12">
+              <div className="md:w-1/2 relative">
+                <div className="bg-white p-6 rounded-2xl shadow-lg border border-gray-100 transform -rotate-2 relative z-10">
+                  <div className="flex items-center gap-3 mb-4">
+                    <div className="flex -space-x-2">
+                      {[...Array(3)].map((_, i) => (
+                        <div
+                          key={i}
+                          className="w-10 h-10 rounded-full bg-gradient-to-br from-green-400 to-emerald-500 border-2 border-white flex items-center justify-center text-white text-xs font-bold"
+                        >
+                          {["A", "B", "C"][i]}
+                        </div>
+                      ))}
+                    </div>
+                    <div className="flex items-center gap-1">
+                      {[...Array(5)].map((_, i) => (
+                        <Star key={i} size={14} className="text-yellow-400 fill-current" />
+                      ))}
+                    </div>
+                  </div>
+                  <p className="text-gray-800 font-bold text-sm mb-2">
+                    「ユーザー評価が高いエージェントのみ厳選」
+                  </p>
+                  <div className="flex items-center gap-2 text-xs text-gray-500">
+                    <span className="bg-green-100 text-[#00C853] px-2 py-0.5 rounded-full font-bold">
+                      満足度98%以上
+                    </span>
+                    <span>のエージェントを紹介</span>
+                  </div>
+                </div>
+                <div className="absolute inset-0 bg-[#00C853] rounded-2xl transform rotate-3 opacity-10 translate-y-4 translate-x-4"></div>
+              </div>
+              <div className="md:w-1/2 relative">
+                <img
+                  src="/Hired-bro.svg"
+                  alt=""
+                  className="hidden md:block absolute -top-8 sm:-top-12 md:-top-16 lg:-top-20 xl:-top-24 right-0 md:-right-8 lg:-right-12 w-48 sm:w-56 md:w-64 lg:w-72 xl:w-80 opacity-100 pointer-events-none select-none z-0"
+                  aria-hidden="true"
+                />
+                <span className="text-[#00C853] font-bold text-6xl opacity-20 font-serif block -mb-4 -ml-2 relative z-10">
+                  01
+                </span>
+                <h3 className="text-2xl font-bold text-gray-900 mb-6 relative z-10">
+                  「ハズレなし」の
+                  <br />
+                  エージェント品質
+                </h3>
+                <p className="text-gray-600 leading-loose mb-6 font-medium relative z-10">
+                  独自のユーザーアンケートで
+                  <span className="text-gray-900 font-bold">
+                    高評価を獲得したエージェントだけ
+                  </span>
+                  がマッチングに参加できる仕組み。評価が高いほど優先的にユーザーと出会えるため、
+                  <span className="text-gray-900 font-bold">
+                    エージェント側も本気でサポート
+                  </span>
+                  します。
+                </p>
+                <ul className="space-y-3 relative z-10">
+                  {[
+                    "ユーザー満足度で継続的に評価",
+                    "低評価エージェントは自動的に除外",
+                    "常に質の高いサポートを約束",
+                  ].map((item) => (
+                    <li
+                      key={item}
+                      className="flex items-center gap-3 text-sm font-bold text-gray-700 bg-white p-3 rounded-lg border border-gray-100 shadow-sm"
+                    >
+                      <CheckCircle2 size={18} className="text-[#00C853]" />
+                      {item}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            </div>
+            <div className="flex flex-col md:flex-row-reverse items-center gap-12 relative">
+              <div className="md:w-1/2 relative">
+                <img
+                  src="/Online-consulting-bro.svg"
+                  alt=""
+                  className="hidden md:block absolute -top-24 sm:-top-28 md:-top-32 lg:-top-36 xl:-top-40 left-1/2 -translate-x-1/2 w-32 sm:w-36 md:w-40 lg:w-48 xl:w-56 opacity-100 pointer-events-none select-none z-0"
+                  aria-hidden="true"
+                />
+                <div className="bg-white p-6 rounded-2xl shadow-lg border border-gray-100 transform rotate-2 relative z-10">
+                  <div className="flex items-center gap-4 mb-4">
+                    <div className="w-12 h-12 bg-[#06C755] rounded-xl flex items-center justify-center">
+                      <MessageCircle size={24} className="text-white" />
+                    </div>
+                    <div className="flex-1">
+                      <div className="bg-gray-100 rounded-2xl rounded-tl-none p-3">
+                        <p className="text-sm text-gray-700 font-medium">
+                          年収400万以上で、未経験可の求人を探しています
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2 text-xs text-gray-500 mb-2">
+                    <Clock size={12} className="text-[#00C853]" />
+                    <span>1分後...</span>
+                  </div>
+                  <div className="bg-green-50 rounded-2xl rounded-tr-none p-3 border border-green-100">
+                    <p className="text-sm text-gray-700 font-medium">
+                      ✨ あなたにピッタリの3名のエージェントをご紹介します！
+                    </p>
+                  </div>
+                </div>
+                <div className="absolute inset-0 bg-[#06C755] rounded-2xl transform -rotate-3 opacity-20 translate-y-4 -translate-x-4"></div>
+              </div>
+              <div className="md:w-1/2">
+                <span className="text-[#00C853] font-bold text-6xl opacity-20 font-serif block -mb-4 -ml-2">
+                  02
+                </span>
+                <h3 className="text-2xl font-bold text-gray-900 mb-6">
+                  LINEで完結。
+                  <br className="hidden md:block" />
+                  驚くほど
+                  <br className="md:hidden" />
+                  「タイパ」がいい
+                </h3>
+                <p className="text-gray-600 leading-loose mb-6 font-medium">
+                  <span className="text-gray-900 font-bold">
+                    LINEで希望条件を伝えるだけ
+                  </span>
+                  で、あなたにマッチしたエージェントをすぐにご紹介。
+                  <span className="text-gray-900 font-bold">
+                    各日程調整もLINEで完結
+                  </span>
+                  。「とりあえず話だけ聞きたい」も、
+                  <span className="text-gray-900 font-bold">電話1本</span>
+                  でOKです。
+                </p>
+                <ul className="space-y-3">
+                  {[
+                    "LINEで気軽に相談OK",
+                    "電話でも希望をヒアリング",
+                    "最短1分でエージェント紹介",
+                  ].map((item) => (
+                    <li
+                      key={item}
+                      className="flex items-center gap-3 text-sm font-bold text-gray-700 bg-white p-3 rounded-lg border border-gray-100 shadow-sm"
+                    >
+                      <CheckCircle2 size={18} className="text-[#00C853]" />
+                      {item}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section
+        id="usage-flow"
+        className="py-4 md:py-24 bg-gradient-to-b from-green-50/50 via-white to-white border-t border-gray-100 relative overflow-hidden"
+      >
+        <div className="container mx-auto px-4 max-w-6xl relative z-10">
+          <div className="text-center mb-12 md:mb-16">
+            <div className="inline-block bg-white rounded-full px-6 py-2 mb-4 border-2 border-[#00C853] shadow-md">
+              <p className="text-[#00C853] font-bold text-sm md:text-base">
+                自分にぴったりの転職エージェントが見つかる
+              </p>
+            </div>
+            <h2 className="text-3xl md:text-4xl font-extrabold text-gray-900 mb-2">
+              カンタン <span className="text-[#00C853]">3STEP</span>
+            </h2>
+            <p className="text-xl md:text-2xl font-bold text-gray-700">
+              診断の流れ
+            </p>
+            <div className="w-24 h-1 bg-[#00C853] mx-auto mt-4 rounded-full"></div>
+          </div>
+
+          <div className="space-y-8 md:space-y-12">
+            <div className="bg-white rounded-2xl md:rounded-3xl shadow-lg border-2 border-green-100 p-6 md:p-8 hover:shadow-xl transition-all">
+              <div className="flex flex-col md:flex-row items-center gap-6 md:gap-8">
+                <div className="flex-shrink-0 w-full md:w-1/3">
+                  <div className="bg-gradient-to-br from-green-50 to-emerald-100 rounded-2xl p-6 md:p-8 text-center">
+                    <div className="text-5xl md:text-6xl font-extrabold text-[#00C853] mb-2">
+                      STEP1
+                    </div>
+                    <div className="bg-white rounded-xl p-4 md:p-6 shadow-md border-2 border-green-200">
+                      <div className="bg-gray-50 rounded-lg p-3 mb-2">
+                        <div className="text-xs text-gray-500 mb-1 text-left">
+                          診断
+                        </div>
+                        <div className="space-y-2">
+                          {["職種", "業種", "経験年数"].map((item) => (
+                            <div
+                              key={item}
+                              className="bg-green-100 rounded px-3 py-2 text-xs font-bold text-gray-700 border border-green-200"
+                            >
+                              {item}
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <div className="flex-1 text-center md:text-left">
+                  <h3 className="text-2xl md:text-3xl font-bold text-gray-900 mb-3">
+                    30秒で終わる質問に答える
+                  </h3>
+                  <p className="text-gray-600 text-lg md:text-xl font-medium mb-4">
+                    あなたに合うエージェントを
+                    <br />
+                    分析します！
+                  </p>
+                  <div className="flex items-center justify-center md:justify-start gap-2 text-sm text-gray-500">
+                    <Clock size={16} className="text-[#00C853]" />
+                    <span>所要時間：約30秒</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-white rounded-2xl md:rounded-3xl shadow-lg border-2 border-green-100 p-6 md:p-8 hover:shadow-xl transition-all">
+              <div className="flex flex-col md:flex-row-reverse items-center gap-6 md:gap-8">
+                <div className="flex-shrink-0 w-full md:w-1/3">
+                  <div className="bg-gradient-to-br from-green-50 to-emerald-100 rounded-2xl p-6 md:p-8 text-center">
+                    <div className="text-5xl md:text-6xl font-extrabold text-[#00C853] mb-2">
+                      STEP2
+                    </div>
+                    <div className="bg-white rounded-xl p-4 md:p-6 shadow-md border-2 border-green-200">
+                      <div className="bg-gray-50 rounded-lg p-3 space-y-2">
+                        <div className="bg-white border border-gray-300 rounded px-3 py-2 text-xs text-left">
+                          <div className="text-gray-400 text-[10px] mb-1">
+                            氏名
+                          </div>
+                          <div className="text-gray-700">山田 太郎</div>
+                        </div>
+                        <div className="bg-white border border-gray-300 rounded px-3 py-2 text-xs text-left">
+                          <div className="text-gray-400 text-[10px] mb-1">
+                            電話番号
+                          </div>
+                          <div className="text-gray-700">090-1234-5678</div>
+                        </div>
+                        <button className="w-full bg-[#00C853] text-white rounded-lg px-3 py-2 text-xs font-bold mt-2">
+                          送信
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <div className="flex-1 text-center md:text-left">
+                  <h3 className="text-2xl md:text-3xl font-bold text-gray-900 mb-3">
+                    簡単な情報を入力するだけ
+                  </h3>
+                  <div className="flex items-center justify-center md:justify-start gap-2 text-sm text-gray-500">
+                    <CheckCircle2 size={16} className="text-[#00C853]" />
+                    <span>個人情報は厳重に管理されます</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-white rounded-2xl md:rounded-3xl shadow-lg border-2 border-green-100 p-6 md:p-8 hover:shadow-xl transition-all">
+              <div className="flex flex-col md:flex-row items-center gap-6 md:gap-8">
+                <div className="flex-shrink-0 w-full md:w-1/3">
+                  <div className="bg-gradient-to-br from-green-50 to-emerald-100 rounded-2xl p-6 md:p-8 text-center">
+                    <div className="text-5xl md:text-6xl font-extrabold text-[#00C853] mb-2">
+                      STEP3
+                    </div>
+                    <div className="bg-white rounded-xl p-4 md:p-6 shadow-md border-2 border-green-200">
+                      <div className="bg-gray-900 rounded-lg p-3">
+                        <div className="text-white text-xs mb-2 text-left">
+                          12:00
+                        </div>
+                        <div className="bg-[#00C853] rounded-lg p-2 flex items-center gap-2">
+                          <div className="w-6 h-6 bg-white rounded-full flex items-center justify-center">
+                            <MessageCircle size={12} className="text-[#00C853]" />
+                          </div>
+                          <div className="text-white text-[10px] font-bold">
+                            診断結果が届いています
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <div className="flex-1 text-center md:text-left">
+                  <h3 className="text-2xl md:text-3xl font-bold text-gray-900 mb-3">
+                    公式LINEを追加して
+                    <br />
+                    診断結果を受け取る
+                  </h3>
+                  <p className="text-gray-600 text-lg md:text-xl font-medium mb-4">
+                    あなたにピッタリのエージェントが
+                    <br />
+                    LINEに届く！
+                  </p>
+                  <div className="flex items-center justify-center md:justify-start gap-2 text-sm text-gray-500">
+                    <MessageCircle size={16} className="text-[#00C853]" />
+                    <span>LINEで気軽に相談OK</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="text-center mt-12 space-y-2">
+            <div>
+              {weeklyDiagnosisCount && (
+                <div className="inline-flex items-center justify-center gap-1.5 bg-white px-3 py-1.5 rounded-lg shadow-md border border-gray-200 text-xs sm:text-sm text-gray-800 w-auto mx-auto text-center">
+                  <span className="w-2 h-2 rounded-full bg-[#00C853] animate-pulse"></span>
+                  <span>
+                    今週{" "}
+                    <span className="font-bold text-[#00C853]">
+                      {weeklyDiagnosisCount.toLocaleString()}
+                    </span>{" "}
+                    人が診断しました
+                  </span>
+                </div>
+              )}
+              <button
+                type="button"
+                onClick={handleCtaClick}
+                onTouchStart={handleCtaTouchStart}
+                onTouchEnd={handleCtaTouchEnd}
+                className="touch-manipulation bg-gradient-to-r from-orange-500 to-orange-600 text-white px-8 md:px-12 py-4 md:py-5 rounded-full font-bold text-lg md:text-xl transition-all transform hover:-translate-y-1 hover:scale-[1.02] flex items-center justify-center gap-3 mx-auto relative overflow-hidden group"
+              >
+                <span className="relative z-10">まずは診断してみる</span>
+                <ArrowRight size={24} className="relative z-10" />
+                <div
+                  className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent transform -skew-x-12 -translate-x-full"
+                  style={{ animation: "shimmer 3s infinite" }}
+                ></div>
+              </button>
+              <p className="text-sm text-gray-500 mt-4">
+                <Clock size={14} className="inline text-[#00C853] mr-1" />
+                所要時間：約1分
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section
+        id="faq"
+        className="py-4 md:py-24 bg-white border-t border-gray-100 relative overflow-hidden"
+      >
+        <img
+          src="/Online-consulting-bro.svg"
+          alt=""
+          className="hidden md:block absolute left-0 sm:left-8 md:left-16 lg:left-24 xl:left-32 top-0 w-32 sm:w-40 md:w-48 lg:w-56 xl:w-64 opacity-100 pointer-events-none select-none z-0"
+          aria-hidden="true"
+        />
+        <div className="container mx-auto px-4 max-w-4xl relative z-10">
+          <div className="text-center mb-8 md:mb-12">
+            <span className="text-[#00C853] font-bold text-sm tracking-wider uppercase block mb-2">
+              FAQ
+            </span>
+            <h2 className="text-3xl font-bold text-gray-800">よくある質問</h2>
+            <div className="w-16 h-1 bg-[#00C853] mx-auto mt-4 rounded-full"></div>
+          </div>
+
+          <div className="space-y-4">
+            {[
+              {
+                q: "本当に無料で利用できますか？",
+                a: "はい、完全無料です。エージェントマッチングの利用から、エージェントへの相談、転職サポートまで一切費用はかかりません。費用はエージェントが企業側から受け取る成功報酬で賄われるため、求職者の方は安心してご利用いただけます。",
+              },
+              {
+                q: "普通の転職サイトと何が違うのですか？",
+                a: "一般的な転職サイトでは自分でエージェントを探す必要がありますが、出会えるエージェントでは「ユーザー評価の高いエージェントだけ」があなたにマッチングされます。ハズレを引くリスクがなく、質の高いサポートを受けられるのが最大の違いです。",
+              },
+              {
+                q: "今すぐ転職する気がなくても大丈夫？",
+                a: "もちろん大丈夫です。「まずは自分の市場価値を知りたい」「良い求人があれば考えたい」という方も多くご利用いただいています。無理に転職を勧められることはありませんので、情報収集としてお気軽にご相談ください。",
+              },
+              {
+                q: "エージェントが合わなかった場合は変更できますか？",
+                a: "はい、何度でも変更可能です。相性が合わないと感じたら、遠慮なくお申し付けください。別のエージェントを再度マッチングいたします。あなたにピッタリのパートナーが見つかるまでサポートします。",
+              },
+              {
+                q: "紹介されるエージェントはどのように選ばれていますか？",
+                a: "実際に利用したユーザーからのアンケート評価をもとに、満足度の高いエージェントのみを厳選しています。低評価が続くエージェントは自動的にマッチング対象から除外されるため、常に質の高いエージェントだけが紹介される仕組みです。",
+              },
+              {
+                q: "どれくらいの時間でエージェントを紹介してもらえますか？",
+                a: "LINEまたはお電話で希望条件をお伝えいただければ、最短1分〜数時間以内にあなたに合ったエージェントをご紹介します。お急ぎの場合はお電話でのご相談がおすすめです。",
+              },
+            ].map((item, index) => (
+              <details
+                key={index}
+                className="group bg-gray-50 rounded-2xl border border-gray-100 overflow-hidden"
+              >
+                <summary className="flex items-center justify-between p-6 cursor-pointer list-none hover:bg-gray-100 transition-colors">
+                  <div className="flex items-center gap-4">
+                    <span className="flex-shrink-0 w-8 h-8 bg-[#00C853] text-white rounded-full flex items-center justify-center text-sm font-bold">
+                      Q
+                    </span>
+                    <span className="font-bold text-gray-800 text-left">
+                      {item.q}
+                    </span>
+                  </div>
+                  <ChevronDown
+                    size={20}
+                    className="text-gray-400 group-open:rotate-180 transition-transform flex-shrink-0 ml-4"
+                  />
+                </summary>
+                <div className="px-6 pb-6">
+                  <div className="flex gap-4 pt-2 border-t border-gray-200">
+                    <span className="flex-shrink-0 w-8 h-8 bg-green-100 text-[#00C853] rounded-full flex items-center justify-center text-sm font-bold mt-2">
+                      A
+                    </span>
+                    <p className="text-gray-600 leading-relaxed font-medium pt-2">
+                      {item.a}
+                    </p>
+                  </div>
+                </div>
+              </details>
+            ))}
+          </div>
+
+          <div className="text-center mt-12 space-y-2">
+            <div>
+              <p className="text-gray-500 text-sm mb-4">
+                その他のご質問があればお気軽にお問い合わせください
+              </p>
+              <button
+                type="button"
+                onClick={handleCtaClick}
+                onTouchStart={handleCtaTouchStart}
+                onTouchEnd={handleCtaTouchEnd}
+                className="touch-manipulation inline-flex items-center gap-2 bg-gradient-to-r from-orange-500 to-orange-600 text-white px-8 py-4 rounded-full font-bold text-lg hover:from-orange-600 hover:to-orange-700 transition-all transform hover:-translate-y-1 relative overflow-hidden group"
+              >
+                <span className="relative z-10">あなたに合うエージェントを<br className="md:hidden" />診断する</span>
+                <ArrowRight size={20} className="relative z-10" />
+                <div
+                  className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent transform -skew-x-12 -translate-x-full"
+                  style={{ animation: "shimmer 3s infinite" }}
+                ></div>
+              </button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <footer className="bg-white border-t border-gray-100 py-12 text-sm">
+        <div className="container mx-auto px-6 max-w-6xl">
+          <div className="flex flex-col md:flex-row justify-between items-start gap-8">
+            <div>
+              <div className="flex items-center gap-2 mb-4">
+                <img
+                  src="/deaeru-logo.png"
+                  alt="出会えるエージェント"
+                  className="h-8 w-auto object-contain"
+                />
+              </div>
+              <p className="text-xs leading-loose text-gray-400">
+                出会える。いい人に、いい求人に。
+              </p>
+            </div>
+            <div className="flex flex-col md:flex-row gap-6 md:gap-8 text-gray-600 font-medium">
+              <Link href="https://foresma.jp" className="hover:text-[#00C853] transition-colors">
+                運営会社
+              </Link>
+            </div>
+          </div>
+          <div className="mt-12 pt-8 border-t border-gray-100 text-center md:text-left flex flex-col md:flex-row justify-between items-center gap-4">
+            <p className="text-[10px] text-gray-400">
+              © 2024 Meetable Agent. All Rights Reserved.
+            </p>
+            <div className="flex gap-4">
+              <div className="w-6 h-6 bg-gray-100 rounded-full hover:bg-gray-200 transition-colors cursor-pointer"></div>
+              <div className="w-6 h-6 bg-gray-100 rounded-full hover:bg-gray-200 transition-colors cursor-pointer"></div>
+            </div>
+          </div>
+        </div>
+      </footer>
+
+    </div>
+  );
+}

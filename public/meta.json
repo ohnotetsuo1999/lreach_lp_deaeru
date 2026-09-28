@@ -1,0 +1,9 @@
+{
+  "name": "出会えるエージェント",
+  "short_name": "出会えるエージェント",
+  "description": "希望条件に合致した相性の良いキャリアアドバイザーや優良求人をご紹介する転職エージェントマッチングサービスです",
+  "url": "https://deaeru-agent.jp/",
+  "start_url": "https://deaeru-agent.jp/",
+  "canonical_url": "https://deaeru-agent.jp/",
+  "icon": "https://deaeru-agent.jp/deaeru_logo.svg"
+}

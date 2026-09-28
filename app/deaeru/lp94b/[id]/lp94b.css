@@ -1,0 +1,183 @@
+/*
+ * lp94b スタイル — 先方（緒方）支給の styles.css（2026-08-20版）を移植。
+ * 素の body / * / a 等の要素セレクタは他ページへ漏れないよう .lp94b-scope 配下に限定した。
+ * クラス名は先方HTMLのまま（lp-* / register系）。未使用の complete-screen 系は削除
+ * （モックの「登録完了画面」は thanks→Gateway→LINE誘導 に置き換えたため）。
+ */
+:root {
+  --lp94b-green: #07823f;
+  --lp94b-green-dark: #005b32;
+  --lp94b-green-bright: #08bd59;
+  --lp94b-green-pale: #eaf8ef;
+  --lp94b-cream: #fffaf0;
+  --lp94b-yellow: #ffc914;
+  --lp94b-ink: #122239;
+  --lp94b-muted: #64736d;
+  --lp94b-line: #cfe6d7;
+  --lp94b-shadow: 0 10px 28px rgba(0, 89, 48, .10);
+}
+
+.lp94b-scope, .lp94b-scope *, .lp94b-scope *::before, .lp94b-scope *::after { box-sizing: border-box; }
+.lp94b-scope {
+  margin: 0;
+  min-height: 100vh;
+  color: var(--lp94b-ink);
+  background: #eaf1ed;
+  font-family: -apple-system, BlinkMacSystemFont, "Hiragino Kaku Gothic ProN", "Yu Gothic", "Noto Sans JP", sans-serif;
+  font-feature-settings: "palt";
+  -webkit-font-smoothing: antialiased;
+}
+.lp94b-scope a { color: inherit; }
+.lp94b-scope button, .lp94b-scope input, .lp94b-scope select { font: inherit; }
+.lp94b-scope button { cursor: pointer; }
+.lp94b-scope .site-shell { width: min(100%, 390px); margin: 0 auto; overflow: hidden; background: #fff; box-shadow: 0 0 34px rgba(17, 60, 37, .10); }
+.lp94b-scope .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
+
+.lp94b-scope .brand { display: inline-flex; align-items: center; gap: 9px; text-decoration: none; font-size: 16px; font-weight: 900; letter-spacing: -.04em; }
+.lp94b-scope .brand-mark { width: 24px; height: 24px; flex: 0 0 auto; border-radius: 50%; background: linear-gradient(135deg, #01be5a 15%, #8eda10 100%); }
+
+/* 旧 .final-button（2ステップフォームの緑グラデCTA）は 2026-09-10 に削除。共通フォーム（ogata-form.css）の .final-button と衝突していたため */
+
+.lp94b-scope .faq-list { display: grid; gap: 13px; }
+.lp94b-scope .faq-card { border: 1px solid var(--lp94b-line); border-radius: 16px; background: #fff; box-shadow: 0 7px 18px rgba(0, 70, 35, .06); overflow: hidden; }
+.lp94b-scope .faq-card summary { display: flex; gap: 10px; align-items: flex-start; padding: 17px 39px 17px 16px; list-style: none; cursor: pointer; position: relative; font-size: 15px; font-weight: 900; line-height: 1.55; }
+.lp94b-scope .faq-card summary::-webkit-details-marker { display: none; }
+.lp94b-scope .faq-card summary::after { content: "+"; position: absolute; right: 16px; top: 15px; color: var(--lp94b-green); font-size: 22px; font-weight: 500; }
+.lp94b-scope .faq-card[open] summary::after { content: "−"; }
+.lp94b-scope .qa-mark { width: 27px; height: 27px; display: grid; place-items: center; flex: 0 0 auto; border-radius: 50%; font-size: 14px; font-weight: 900; }
+.lp94b-scope .q-mark { color: #fff; background: #08c567; }
+.lp94b-scope .a-mark { color: var(--lp94b-green); background: #d9f6e6; }
+.lp94b-scope .faq-answer { display: flex; gap: 10px; padding: 0 17px 19px; }
+.lp94b-scope .faq-answer p { margin: 2px 0 0; font-size: 13.5px; line-height: 1.8; font-weight: 650; }
+
+/* lp94b: existing lp94a image composition */
+.lp94b-scope .lp-shell { line-height: 0; }
+.lp94b-scope .lp-image-stack { margin: 0; padding: 0; }
+.lp94b-scope .lp-image {
+  display: block;
+  width: 100%;
+  height: auto;
+  margin: 0;
+  padding: 0;
+}
+.lp94b-scope .lp-cta {
+  padding: 24px 18px 29px;
+  text-align: center;
+  background: transparent;
+  line-height: normal;
+}
+.lp94b-scope .lp-cta-button {
+  position: relative;
+  display: flex;
+  width: 100%;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  border: 0;
+  color: #fff;
+  text-decoration: none;
+  transition: transform .18s ease, box-shadow .18s ease;
+}
+/* 2026-08-20: image CTA — no box styling, gentle pulse */
+.lp94b-scope .lp-cta-button.lp-cta-img {
+  background: none;
+  box-shadow: none;
+  padding: 0;
+  min-height: 0;
+  border-radius: 0;
+  text-shadow: none;
+  animation: lp94bCtaPulse 1.6s ease-in-out infinite;
+}
+.lp94b-scope .lp-cta-button.lp-cta-img:active { transform: scale(.97); box-shadow: none; }
+@keyframes lp94bCtaPulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.035); }
+}
+.lp94b-scope .lp-faq { margin: 0; padding: 0; background: #f5fbf7; line-height: normal; }
+.lp94b-scope .lp-faq-list { padding: 20px 18px 30px; }
+
+/* 求人カードカルーセル（先方HTMLのインラインstyleを移設） */
+.lp94b-scope .job-carousel { display: flex; gap: 12px; overflow-x: auto; padding: 4px 16px 12px; -webkit-overflow-scrolling: touch; scrollbar-width: none; }
+.lp94b-scope .job-carousel::-webkit-scrollbar { display: none; }
+.lp94b-scope .job-card { flex: 0 0 82%; width: 82%; height: auto; border-radius: 14px; }
+
+/* register（フォーム画面） */
+.lp94b-scope .register-shell { min-height: 100svh; background: linear-gradient(180deg, #f7fff9, #eff9f3); }
+.lp94b-scope .register-header { position: sticky; top: 0; z-index: 20; padding: 12px 18px 10px; border-bottom: 1px solid #dbece1; background: rgba(255,255,255,.96); backdrop-filter: blur(9px); }
+.lp94b-scope .register-header .brand { font-size: 14px; }
+.lp94b-scope .register-header .brand-mark { width: 19px; height: 19px; }
+.lp94b-scope .progress-copy { margin: 9px 0 5px; text-align: right; color: var(--lp94b-green); font-size: 12px; }
+.lp94b-scope .progress-track { height: 8px; overflow: hidden; border-radius: 99px; background: #e3eee7; }
+.lp94b-scope .progress-track span { display: block; height: 100%; border-radius: inherit; background: linear-gradient(90deg, #8ddd14, #05bd58); transition: width .35s ease; }
+.lp94b-scope .form-step { min-height: calc(100svh - 89px); padding: 28px 18px 32px; }
+.lp94b-scope .step-inner { display: flex; min-height: calc(100svh - 149px); flex-direction: column; }
+.lp94b-scope .question-number { margin: 0 0 6px; color: var(--lp94b-green-bright); font-size: 11px; font-weight: 900; letter-spacing: .17em; }
+.lp94b-scope .form-step h1 { margin: 0; color: var(--lp94b-green-dark); font-size: 25px; line-height: 1.45; letter-spacing: -.04em; }
+.lp94b-scope .choice-grid { display: grid; gap: 11px; }
+.lp94b-scope .two-cols { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.lp94b-scope .choice { display: block; cursor: pointer; position: relative; }
+.lp94b-scope .choice input { position: absolute; opacity: 0; pointer-events: none; }
+.lp94b-scope .choice span { min-height: 102px; display: flex; align-items: center; justify-content: center; flex-direction: column; padding: 13px 7px; border: 2px solid #dfe5e2; border-radius: 14px; text-align: center; color: var(--lp94b-ink); background: #fff; box-shadow: 0 4px 11px rgba(0,0,0,.025); font-size: 14px; font-weight: 800; line-height: 1.5; transition: border .16s ease, background .16s ease, transform .16s ease; }
+.lp94b-scope .choice input:checked + span { border-color: var(--lp94b-green-bright); color: var(--lp94b-green-dark); background: #ebfff3; transform: translateY(-2px); box-shadow: 0 6px 14px rgba(0,143,68,.12); }
+.lp94b-scope .choice input:focus-visible + span { outline: 3px solid rgba(255,201,20,.55); outline-offset: 2px; }
+.lp94b-scope .next-button, .lp94b-scope .back-link { border: 0; text-decoration: none; }
+.lp94b-scope .next-button { min-height: 57px; width: 100%; margin-top: auto; flex: none; border-radius: 14px; color: #fff; background: linear-gradient(180deg, #12bd5d, #078c45); box-shadow: 0 5px 0 #006b34; font-size: 16px; font-weight: 900; }
+.lp94b-scope .next-button > span { margin-left: 6px; font-size: 24px; vertical-align: -2px; }
+.lp94b-scope .field-error { min-height: 21px; margin: 8px 2px 0; color: #d93535; font-size: 12px; font-weight: 700; }
+.lp94b-scope .input-card { display: grid; gap: 21px; margin-top: 18px; padding: 20px 16px; border: 1px solid var(--lp94b-line); border-radius: 17px; background: #fff; box-shadow: var(--lp94b-shadow); }
+.lp94b-scope .input-card fieldset { min-width: 0; margin: 0; padding: 0; border: 0; }
+.lp94b-scope .input-card legend, .lp94b-scope .input-label { display: block; margin: 0 0 9px; font-size: 14px; font-weight: 900; }
+.lp94b-scope .required { display: inline-block; margin-left: 4px; padding: 2px 5px; border-radius: 4px; color: #fff; background: var(--lp94b-green-bright); font-size: 10px; vertical-align: 2px; }
+.lp94b-scope .input-card input[type="text"], .lp94b-scope .input-card input[type="tel"], .lp94b-scope .input-card select { width: 100%; min-height: 53px; padding: 12px 13px; border: 2px solid #dfe5e2; border-radius: 11px; color: var(--lp94b-ink); background: #fff; outline: none; }
+.lp94b-scope .input-card input:focus, .lp94b-scope .input-card select:focus { border-color: var(--lp94b-green-bright); box-shadow: 0 0 0 3px rgba(8,189,89,.10); }
+.lp94b-scope .name-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.lp94b-scope .compact-choices .choice span { min-height: 53px; padding: 10px; border-radius: 11px; }
+.lp94b-scope .age-note, .lp94b-scope .location-note { margin: -7px 2px 0; color: #52645c; font-size: 12px; line-height: 1.7; }
+.lp94b-scope .location-grid { display: grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap: 8px; }
+.lp94b-scope .location-grid label { cursor: pointer; position: relative; }
+.lp94b-scope .location-grid input { position: absolute; opacity: 0; }
+.lp94b-scope .location-grid span { display: grid; min-height: 46px; place-items: center; padding: 7px 3px; border: 1.5px solid #d9e4dd; border-radius: 9px; background: #fff; font-size: 12px; font-weight: 800; }
+.lp94b-scope .location-grid input:checked + span { border-color: var(--lp94b-green-bright); color: var(--lp94b-green-dark); background: var(--lp94b-green-pale); }
+.lp94b-scope .last-step-inner { min-height: auto; }
+.lp94b-scope .agreement { padding: 18px 4px 0; }
+.lp94b-scope .agreement p { margin: 0; color: #55655e; font-size: 10.5px; line-height: 1.7; }
+.lp94b-scope .agreement a { color: var(--lp94b-green); font-weight: 800; }
+.lp94b-scope .agreement em { color: #ef4c4c; font-style: normal; }
+.lp94b-scope .back-link { align-self: center; margin-top: 22px; padding: 8px; color: #6b7d74; background: transparent; font-size: 12px; text-decoration: underline; }
+
+@media (min-width: 391px) {
+  .lp94b-scope .site-shell { margin-block: 18px; border-radius: 12px; }
+}
+
+@media (max-width: 350px) {
+  .lp94b-scope .form-step { padding-inline: 14px; }
+  .lp94b-scope .choice span { font-size: 13px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .lp94b-scope *, .lp94b-scope *::before, .lp94b-scope *::after { scroll-behavior: auto !important; transition: none !important; animation: none !important; }
+}
+
+/* ── 2026-09-10 追加（先方 完成ZIP lp94b/index.html・follow94.css 移植） ──
+   末尾CTA（.final94）・運営会社フッター（.company94）・追従CTA（.follow94）。
+   フォーム画面のスタイルは共通の ogata-form.css（.ogata-form-scope）へ移り、
+   上の register 系（.register-shell 〜 .back-link）は 2ステップフォーム廃止に伴い未使用 */
+.lp94b-scope .final94 { background: #fff; }
+.lp94b-scope .company94 { background: #fff; padding: 24px 16px 24px; color: #333; text-align: left; line-height: normal; }
+.lp94b-scope .company94 .company94-logo { display: block; width: 130px; height: auto; margin: 0 0 10px 10px; }
+.lp94b-scope .company94-tagline { font-size: 12px; font-weight: 700; color: #888; margin: 0 0 16px 10px; line-height: 1.5; }
+.lp94b-scope .company94 > a { display: block; font-size: 14px; font-weight: 700; color: #333; text-decoration: none; line-height: 1.5; }
+.lp94b-scope .company94 > a:hover { text-decoration: underline; }
+.lp94b-scope .company94 small { display: block; text-align: center; font-size: 10px; color: #888; margin-top: 44px; }
+.lp94b-scope .follow94 { position: fixed; bottom: calc(16px + env(safe-area-inset-bottom, 0px)); left: 0; right: 0; z-index: 50; max-width: 390px; margin: 0 auto; padding: 0 15px; pointer-events: none; }
+.lp94b-scope .follow94[hidden] { display: none !important; }
+.lp94b-scope .follow94 button { display: block; width: 100%; border: 0; background: none; padding: 0; pointer-events: auto; touch-action: manipulation; animation: bounce94 1.5s ease infinite; }
+.lp94b-scope .follow94 img { display: block; width: 100%; height: auto; }
+.lp94b-scope .follow94 button:focus-visible { outline: 3px solid #7300ce; outline-offset: 4px; }
+@keyframes bounce94 {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(8px); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .lp94b-scope .follow94 button { animation: none; }
+}

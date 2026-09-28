@@ -1,0 +1,43 @@
+import { type Metadata } from "next";
+
+import { LineDirectIntro } from "../../_shared/LineDirectIntro";
+
+// ▼▼▼ 設定エリア（CTAの遷移先LINE/LIFFリンクを後で差し替える） ▼▼▼
+const CTA_URL =
+  "https://liff.line.me/2008193428-jBcEHiff?linkId=19c9f3d8-2165-4fb2-8b4b-ecb58f4ad8f8&to=e8f0d2d9-b9be-4055-8758-e6443e23b8be";
+// ▲▲▲ 設定エリアここまで ▲▲▲
+
+const LP_KEY = "deaeru-lp08f";
+
+interface Props {
+  params: Promise<{ id: string }>;
+}
+
+export async function generateMetadata({ params }: Props): Promise<Metadata> {
+  const { id } = await params;
+  const title = "出会えるエージェント診断";
+  const description =
+    "あなたの希望条件に合った転職エージェントを診断し、相性の良いキャリアアドバイザーをご紹介します。";
+  const canonicalPath = `/deaeru/lp08f/${id}`;
+
+  return {
+    alternates: {
+      canonical: canonicalPath,
+    },
+    description,
+    openGraph: {
+      type: "website",
+      siteName: "出会えるエージェント",
+      url: canonicalPath,
+      title,
+      description,
+    },
+    title,
+  };
+}
+
+export default async function LP08fDeaeru({ params }: Props) {
+  await params;
+
+  return <LineDirectIntro lpKey={LP_KEY} ctaUrl={CTA_URL} conditionPopup />;
+}

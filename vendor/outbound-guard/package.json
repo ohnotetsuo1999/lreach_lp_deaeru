@@ -1,0 +1,26 @@
+{
+  "name": "@lreach/outbound-guard",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./index.d.ts",
+      "import": "./index.js",
+      "default": "./index.js"
+    },
+    "./edge": {
+      "types": "./edge.d.ts",
+      "import": "./edge.js",
+      "default": "./edge.js"
+    },
+    "./node": {
+      "types": "./node.d.ts",
+      "import": "./node.js",
+      "default": "./node.js"
+    }
+  },
+  "scripts": {
+    "test": "node --test"
+  }
+}
