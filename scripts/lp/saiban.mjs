@@ -5,6 +5,7 @@ import { dirname, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
 import { renderTemplate, templates } from "./templates.mjs";
+import { addFilePreview } from "./design-preview.mjs";
 import { loadPublisherRuntime } from "./runtime.mjs";
 
 const [action, input] = process.argv.slice(2);
@@ -121,12 +122,13 @@ if (action === "templates") {
       if (e.code !== "ENOENT") throw e;
     }
   }
-  const design = draft.designFile
+  const sourceDesign = draft.designFile
     ? await readFile(resolve(draft.designFile), "utf8")
     : renderTemplate(draft.template || "career-simple", {
         title: draft.title,
         ...draft.content,
       });
+  const design = addFilePreview(sourceDesign, draft.title);
   const spec = {
     slug,
     title: draft.title,

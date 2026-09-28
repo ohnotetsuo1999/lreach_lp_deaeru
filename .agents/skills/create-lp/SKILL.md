@@ -1,6 +1,6 @@
 ---
 name: create-lp
-description: LreachのLPを作成する。採番方法、広告タグ（GTM）、LINE追加後のシナリオを選択肢UIで順番に確認し、デザイン添付・HTML・チャットでの共同作成からVercel Preview発行まで進める。「LP作成」「LPを作って」「LPを発行して」で使う。
+description: LreachのLPを作成する。採番方法、広告タグ（GTM）、LINE追加後のシナリオを選択肢UIで順番に確認し、直接開いて確認できるHTMLを作る。明示的な「デプロイして」でVercel Productionへ公開する。
 ---
 
 # LP作成
@@ -26,9 +26,9 @@ LP専用リポジトリのルートで実行する。デザインはこのリポ
 
 - Node.js、npm依存、GitHubの書き込み権限、Vercel CLIへのログインとLP専用プロジェクトへのアクセス権。端末のlinkはCLIが自動作成する。
 - 通常はURL・トークンの入力不要。CLIが本番backendへ自動接続し、LPプロジェクトのVercel Development設定から限定した発行用トークンだけを取得する。秘密の値をチャット・Git・HTML・端末ファイルに出さない。
-- 手動の別環境接続は `LP_PUBLISH_API_URL` と `LP_PUBLISH_TOKEN` を両方指定する。認証失敗時はまずVercelログイン・LPプロジェクト権限を確認し、利用者へ秘密の値を質問しない。
+- 手動の別環境接続は `LP_PUBLISH_API_URL` と `LP_PUBLISH_TOKEN` を両方指定する。Production発行時は管理API接続先が既定の本番backendと一致する必要がある。認証失敗時はまずVercelログイン・LPプロジェクト権限を確認し、利用者へ秘密の値を質問しない。
 - backendのDB migration、既存番号の棚卸し、広告主確認済みタグの登録。未設定のAPIや未完了の台帳をローカル採番で代用しない。
-- mainのみで運用する。自動発行はPreviewまで。VercelのGit自動連携があるとmain pushで本番公開されうるため、このPreview用CLIはGit自動連携のないプロジェクトで使う。
+- mainのみで運用する。`issue` はProduction公開まで行う。Git自動連携のないLP専用Vercelプロジェクトで、Production公開先・環境設定を発行前に検査する。
 
 ## 1. 採番方法を選ぶ
 
@@ -85,18 +85,18 @@ APIの `lineScenarios` に存在する候補だけを、次の表示名と説明
 ```
 この例の値は回答の既定値ではない。手動採番は `code:"lp100a"`、添付HTMLは `designFile` を指定する。タグ・シナリオが保留なら未確定と明示してデザインHTMLだけ作り、実行用仕様への変換と `init` は確定後に行う。
 
-`npm run lp-saiban -- init .lp-publish/draft-<slug>.json` を実行し、生成した `designs/<slug>.html` を希望に合わせて編集する。フォーム位置は `{{LREACH_FORM}}` を1つ、画像は `public/issued-assets/<slug>/` に置く。保存処理・通知先・広告タグをデザインに直接追加しない。
+`npm run lp-saiban -- init .lp-publish/draft-<slug>.json` を実行し、生成した `designs/<slug>.html` を希望に合わせて編集する。`init` はファイルを直接開いた場合だけローカル画像と送信不能のフォーム見本を表示する処理を埋め込む。利用者に渡す前に、このHTMLを直接開いた見た目を確認する。フォーム位置は `{{LREACH_FORM}}` を1つ、画像は `public/issued-assets/<slug>/` に置く。保存処理・通知先・広告タグをデザインに直接追加しない。既存デザインを `designFile` として使う場合も `init` に取り込む。
 
-誇大な実績・架空の口コミを足さない。添付HTMLに既存のタグや送信処理がある場合も検査し、選択したタグの二重実行や未承認の送信を防ぐ。フォーム入りの完成HTMLを `renderPublishedPage` でローカル描画し、PC・スマホの見出し・表示・フォーム位置を確認する。秘密情報や承認されていない送信先がないことを確かめる。
+誇大な実績・架空の口コミを足さない。添付HTMLに既存のタグや送信処理がある場合も検査し、選択したタグの二重実行や未承認の送信を防ぐ。ファイルを直接開いた表示と、`renderPublishedPage` が共通フォームを差し込んだ完成HTMLの両方で、PC・スマホの見出し・画像・フォーム位置を確認する。直接開いたフォーム見本は送信不能で、実際の送信動作とは区別する。秘密情報や承認されていない送信先がないことを確かめる。
 
 ## 6. Vercelへデプロイ
 
 デザインと選択内容が確定したら、LP番号の指定内容（自動なら「自動採番」）、GTMタグ、LINEシナリオと確認できるデザインを示す。
 
 - 発行・デプロイまで既に依頼されていれば、その範囲で進める。毎回承認を取り直さない。
-- デプロイが未依頼なら、完成物を確認できる状態にして、通常のチャットで「この内容でVercel Previewへデプロイしてよいですか」と確認する。許可されていない質問ツールを承認に使わない。スキルの呼び出しだけを外部発行の許可とは扱わない。
+- 「デプロイして」はVercel Productionへの公開指示として扱う。デプロイが未依頼なら、完成HTMLと採番・タグ・LINEの選択を確認できる状態にして、通常のチャットで「この内容でVercel本番環境へ公開してよいですか」と確認する。許可されていない質問ツールを承認に使わない。スキルの呼び出しだけを本番公開の許可とは扱わない。
 
-`npm run lp-saiban -- issue specs/<slug>.json` で、番号予約・タグ取得・ルート生成・ビルド・対象ファイルだけのコミット・main push・Vercel Preview・台帳へのURL登録を順に実行する。別の変更やステージ済みファイルがあれば巻き込まず停止理由を解消する。強制pushしない。
+`npm run lp-saiban -- issue specs/<slug>.json` で、番号予約・タグ取得・ルート生成・ビルド・対象ファイルだけのコミット・main push・Vercel Productionデプロイ・公開ドメインの台帳登録を順に実行する。CLIはProduction環境設定、公開ドメイン、デプロイ結果を検査する。別の変更やステージ済みファイルがあれば巻き込まず停止理由を解消する。強制pushしない。
 
 出力URLをブラウザで確認し、LP番号・確認URL・選択したタグとLINEシナリオ・検証済み範囲・未確認事項を返す。テスト回答は許可された接続先と対象だけで行い、READYだけで回答保存・Slack・LINEも動いたとは報告しない。
 
@@ -105,13 +105,13 @@ APIの `lineScenarios` に存在する候補だけを、次の表示名と説明
 - 同じ仕様と `.lp-publish/<slug>.json` を保持して同じ `issue` を再実行する。登録失敗なら既存URLの登録だけ再開し、新しい番号やデプロイを作らない。
 - デプロイ結果が不明なときはVercelの実結果を確認する。番号の取り直し、状態削除、闇雲な再デプロイをしない。
 - 予約後にデザインを修正した場合は、未デプロイであることを確認して `node scripts/lp/publish.mjs prepare specs/<slug>.json` で同じ番号のコードを再生成する。デプロイ後の改修は新規発行とは分けて扱う。
-- 既存Lreach本体のdevelop/mainへのマージ、Production昇格、既存URL・HTTPSの切替はこのコマンドに含めない。広告計測はProductionの明示有効化時だけ動く。
+- 既存Lreach本体のdevelop/mainへのマージ、既存URL・HTTPSの切替はこのコマンドに含めない。広告計測はProduction設定の明示有効化時だけ動く。
 
 ## 仕組みの説明
 
 発行・回答保存・通知・デプロイの構成と確認範囲は、リポジトリルートの `docs/lp-publication-flow.md` を参照する。options APIはLPマスター・タグ・シナリオを返すもので、既存LPのデザインHTMLや画像を取得するものではない。既存LPを参照する場合はリポジトリのページ・画像を確認する。共通フォームは99Y互換の5項目であり、旧LP固有の全質問・通知・計測の完全複製とは説明しない。
 
-Previewの表示確認と回答受付を区別する。接続先backendがproduction運用の場合、published状態と登録済みProduction URLが必要で、Preview登録だけでは回答保存できない。本番受付ではLP側の `LREACH_DEPLOY_ENV=production`・`OUTBOUND_DELIVERY_ENABLED=true`・`OUTBOUND_DISABLED=false` もProduction環境に明示登録してデプロイする。未設定だと送信ガードがbackendへのPOSTを止める。Previewへ本番送信設定を適用しない。Slackは専用の有効化設定・宛先・トークンが必要。受付や通知がOFFなら、旧LPと同じく動くと説明せず、実際の設定と未検証範囲を伝える。
+直接開いたHTMLの表示確認、Productionの表示確認、回答受付を区別する。接続先backendがproduction運用の場合、published状態と登録済みProduction URLが必要。本番受付ではLP側の `LREACH_DEPLOY_ENV=production`・`OUTBOUND_DELIVERY_ENABLED=true`・`OUTBOUND_DISABLED=false` もProduction環境に明示登録してデプロイする。CLIはこれらと接続先backend・広告計測設定を発行前に照合する。未設定だと送信ガードがbackendへのPOSTを止める。Slackは専用の有効化設定・宛先・トークンが必要。受付や通知がOFFなら、旧LPと同じく動くと説明せず、実際の設定と未検証範囲を伝える。
 
 ## 完了判定
 

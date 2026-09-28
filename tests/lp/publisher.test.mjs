@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { execFile } from "node:child_process";
 import { once } from "node:events";
-import { cp, mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
+import { chmod, cp, mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { createServer } from "node:http";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -9,7 +9,7 @@ import test from "node:test";
 import { promisify } from "node:util";
 
 const exec = promisify(execFile);
-test("発行CLIが選択→同じ番号を予約→ルート生成→Preview台帳登録まで再開可能", async () => {
+test("発行CLIが選択→同じ番号を予約→ルート生成→Production台帳登録まで再開可能", async () => {
   const root = await mkdtemp(join(tmpdir(), "lp-publisher-"));
   let reservations = [];
   let registered;
@@ -54,10 +54,17 @@ test("発行CLIが選択→同じ番号を予約→ルート生成→Preview台�
       })
     );
     await writeFile(join(root, ".gitignore"), ".lp-publish/\n");
+    await mkdir(join(root, "bin"));
+    await writeFile(join(root, "bin/vercel"), `#!${process.execPath}
+if(process.argv[2]==='api')console.log(JSON.stringify({targets:{production:{readyState:'READY',url:'fixture.vercel.app'}}}));
+`);
+    await chmod(join(root, "bin/vercel"), 0o755);
     const env = {
       ...process.env,
       LP_PUBLISH_API_URL: `http://127.0.0.1:${server.address().port}`,
       LP_PUBLISH_TOKEN: "x".repeat(32),
+      NODE_ENV: "test",
+      PATH: join(root, "bin") + ":" + process.env.PATH,
     };
     const run = (...args) =>
       exec(process.execPath, ["scripts/lp/publish.mjs", ...args], {
@@ -114,14 +121,17 @@ assert.equal((await GET(new Request('https://fixture.invalid'),{params:Promise.r
     const path = join(root, ".lp-publish/test.json");
     const state = JSON.parse(await readFile(path));
     Object.assign(state, {
-      url: "https://fixture.vercel.app",
+      url: "https://lreach-lp-marketing.vercel.app",
+      deploymentUrl: "https://fixture.vercel.app",
+      deploymentTarget: "production",
       sourceSha: sha.trim(),
       deploymentStarted: true,
     });
     await writeFile(path, JSON.stringify(state));
     await run("register", ".lp-publish/test.json");
     assert.equal(registered.code, "lp100a");
-    assert.equal(registered.status, "preview");
+    assert.equal(registered.status, "published");
+    assert.equal(registered.url, "https://lreach-lp-marketing.vercel.app");
     assert.equal(registered.requestId, state.requestId);
     assert.equal(JSON.parse(await readFile(path)).registered, true);
   } finally {

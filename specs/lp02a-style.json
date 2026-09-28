@@ -1,0 +1,13 @@
+{
+  "slug": "lp02a-style",
+  "title": "出会えるエージェント診断",
+  "code": null,
+  "tagIds": [
+    "e728f48b-b6c0-5cf9-a7cc-b85f02393989"
+  ],
+  "lineScenarioKey": "lp99y",
+  "design": "designs/lp02a-style.html",
+  "media": "",
+  "mediaType": "",
+  "note": "LP02Aの画像とレイアウトを参照。共通5項目フォームを使用"
+}

@@ -6,7 +6,7 @@ import { access, mkdir, readFile, writeFile } from "node:fs/promises";
 import { dirname, resolve } from "node:path";
 
 import { renderPublishedPage } from "./render.mjs";
-import { ensurePublisherProject, loadPublisherRuntime } from "./runtime.mjs";
+import { ensurePublisherProject, loadPublisherRuntime, publisherProject } from "./runtime.mjs";
 
 const root = process.cwd(),
   [action, input] = process.argv.slice(2);
@@ -49,26 +49,31 @@ async function save(path, data) {
   await mkdir(dirname(path), { recursive: true });
   await writeFile(path, JSON.stringify(data, null, 2) + "\n");
 }
-async function verifyPreviewProject() {
+function projectApi(path, orgId) {
+  try {
+    return JSON.parse(run("vercel", ["api", path, "--scope", orgId, "--raw"]));
+  } catch {
+    throw Error("Vercelプロジェクトの設定を確認できませんでした。");
+  }
+}
+async function verifyProductionBackend() {
+  await loadPublisherRuntime();
+  const apiOrigin = new URL(process.env.LP_PUBLISH_API_URL || publisherProject.backendUrl).origin;
+  if (apiOrigin !== publisherProject.backendUrl &&
+      !(process.env.NODE_ENV === "test" && /^http:\/\/(?:localhost|127\.0\.0\.1)(?::\d+)?$/.test(apiOrigin)))
+    throw Error("Production発行の管理API接続先が本番backendと一致しません。");
+}
+async function verifyProductionProject() {
+  await verifyProductionBackend();
   const link = await ensurePublisherProject(root);
   if (
     !/^prj_[A-Za-z0-9]+$/.test(link.projectId) ||
     !/^team_[A-Za-z0-9]+$/.test(link.orgId)
   )
     throw Error("Invalid Vercel project link");
-  const project = JSON.parse(
-    run("vercel", [
-      "api",
-      "/v9/projects/" + link.projectId,
-      "--scope",
-      link.orgId,
-      "--raw",
-    ])
-  );
-  if (project.targets?.preview?.readyState !== "READY")
-    throw Error(
-      "Administrator must initialize and verify a Preview deployment first"
-    );
+  const project = projectApi("/v9/projects/" + link.projectId, link.orgId);
+  if (project.targets?.production?.readyState !== "READY")
+    throw Error("Vercel Productionの既存デプロイを確認できません。");
   if (
     process.env.VERCEL_PROJECT_ID &&
     process.env.VERCEL_PROJECT_ID !== link.projectId
@@ -78,12 +83,31 @@ async function verifyPreviewProject() {
     throw Error("Vercel team environment mismatch");
   if (project.link)
     throw Error(
-      "Automatic Git deployment is connected. An administrator must verify main push cannot publish Production before using this Preview workflow."
+      "Git自動デプロイが接続されています。main pushで意図せず本番公開されるため停止しました。"
     );
+  const domains = projectApi(`/v9/projects/${link.projectId}/domains`, link.orgId);
+  const domain = domains.domains?.find(d =>
+    d.name === publisherProject.productionDomain && d.verified && !d.redirect && !d.gitBranch
+  );
+  if (!domain) throw Error("公開用Productionドメインの設定を確認できません。");
+  const envs = projectApi(`/v9/projects/${link.projectId}/env`, link.orgId).envs || [];
+  for (const [key, expected] of Object.entries({
+    LREACH_DEPLOY_ENV: "production",
+    OUTBOUND_DELIVERY_ENABLED: "true",
+    OUTBOUND_DISABLED: "false",
+    NEXT_PUBLIC_LREACH_BACKEND_URL: publisherProject.backendUrl,
+    LP_AD_TRACKING_ENABLED: "true",
+  })) {
+    const candidates = envs.filter(e => e.key === key && e.target?.includes("production") && !e.gitBranch);
+    if (candidates.length !== 1) throw Error(`Vercel Productionの${key}設定を確認できません。`);
+    const env = projectApi(`/v1/projects/${link.projectId}/env/${encodeURIComponent(candidates[0].id)}`, link.orgId);
+    if (env.value !== expected) throw Error(`Vercel Productionの${key}設定が発行条件と異なります。`);
+  }
+  return `https://${publisherProject.productionDomain}`;
 }
 if (action === "check") {
-  await verifyPreviewProject();
-  console.log("Preview project ready");
+  await verifyProductionProject();
+  console.log("Production project ready");
 } else if (action === "options") {
   console.log(JSON.stringify(await api("options"), null, 2));
 } else if (action === "prepare") {
@@ -172,7 +196,7 @@ if (action === "check") {
     JSON.stringify({
       code,
       routePattern: `/deaeru/${code}/[id]/`,
-      previewPath: `/deaeru/${code}/001/`,
+      confirmationPath: `/deaeru/${code}/001/`,
       state: statePath,
     })
   );
@@ -182,9 +206,7 @@ if (action === "check") {
   if (!state.generated) throw Error("Run prepare first");
   const sha = run("git", ["rev-parse", "HEAD"]);
   if (action === "deploy") {
-    // Vercelは新規プロジェクトの初回をProduction扱いにすることがある。
-    // 管理者がPreviewを初期化したプロジェクトだけ、マーケターの自動発行を許可する。
-    await verifyPreviewProject();
+    const productionOrigin = await verifyProductionProject();
 
     if (state.deploymentStarted && !state.url)
       throw Error(
@@ -204,10 +226,9 @@ if (action === "check") {
     state.deploymentStarted = true;
     state.sourceSha = sha;
     await save(statePath, state);
-    // --prodは使用しない。このワークフローはPreview作成まで。
     const result = spawnSync(
       "vercel",
-      ["deploy", "--target=preview", "--yes", "--format=json"],
+      ["deploy", "--prod", "--yes", "--format=json"],
       {
         cwd: root,
         encoding: "utf8",
@@ -222,19 +243,28 @@ if (action === "check") {
     if (
       result.status !== 0 ||
       deployment?.readyState !== "READY" ||
-      deployment?.target === "production" ||
+      deployment?.target !== "production" ||
       !/^https:\/\/[a-zA-Z0-9-]+\.vercel\.app$/.test(deployment?.url)
     )
       throw Error("Deployment result unknown. Inspect Vercel before retrying.");
-    state.url = deployment.url;
+    state.deploymentUrl = deployment.url;
+    state.deploymentTarget = "production";
+    state.url = productionOrigin;
     await save(statePath, state);
   }
-  if (!state.url || !state.sourceSha)
+  if (!state.url || !state.sourceSha || state.deploymentTarget !== "production" ||
+      state.url !== `https://${publisherProject.productionDomain}`)
     throw Error("Missing verified deployment URL/SHA");
+  const link = await ensurePublisherProject(root);
+  const project = projectApi(`/v9/projects/${link.projectId}`, link.orgId);
+  if (project.targets?.production?.readyState !== "READY" ||
+      project.targets.production.url !== new URL(state.deploymentUrl).host)
+    throw Error("公開用ドメインが新しいProductionデプロイを指していません。同じ依頼から登録を再開してください。");
+  await verifyProductionBackend();
   await api("deployment", {
     code: state.reservation.lp_code,
     requestId: state.requestId,
-    status: "preview",
+    status: "published",
     url: state.url,
     sourceSha: state.sourceSha,
   });
@@ -243,7 +273,7 @@ if (action === "check") {
   console.log(JSON.stringify({
     code: state.reservation.lp_code,
     routePattern: state.url + `/deaeru/${state.reservation.lp_code}/[id]/`,
-    previewUrl: state.url + `/deaeru/${state.reservation.lp_code}/001/`,
+    productionUrl: state.url + `/deaeru/${state.reservation.lp_code}/001/`,
   }, null, 2));
 } else
   throw Error(

@@ -8,6 +8,7 @@ export const publisherProject = Object.freeze({
   projectId: "prj_8SPA6jPpKs9QJgi7yP58hOwevVuk",
   orgId: "team_iM8C6WDEhY26FzgdmQ2efpFZ",
   backendUrl: "https://lreach-backend.vercel.app",
+  productionDomain: "lreach-lp-marketing.vercel.app",
 });
 
 function vercelApi(path) {

@@ -1,6 +1,6 @@
 # LP発行・回答保存の仕組み
 
-確認日: 2026-09-29。発行コード・実DBのトリガー・Vercel設定・プロトタイプ管理画面への接続を確認。新LPの実採番・公開・実回答送信・Slack到着の照合は本番反映後に行う。現時点では未完了。
+確認日: 2026-09-29。LP100Aの本番受付結果は下記に記録。新しい「デプロイして」の発行フローはProduction公開へ変更したが、この変更での新LP発行・実送信は未実施。
 
 ## LP番号とURL末尾
 
@@ -37,16 +37,16 @@ flowchart TD
   G --> H[DBでLP番号・タグ・LINEシナリオを予約]
   H --> I[動的ルートと発行データを生成]
   I --> J[ビルド → 対象だけコミット → main push]
-  J --> K[Vercel Previewへデプロイ]
+  J --> K[Vercel Productionへデプロイ]
   K --> L[POST /api/lp/admin/deployment/]
-  L --> M[Preview URLとソースSHAを台帳に登録]
+  L --> M[公開ドメインとソースSHAをpublishedとして台帳に登録]
 ```
 
 `options` APIは既存LPのHTMLや画像を返さない。LP99Aを参考にする今回の作業では、リポジトリの `app/deaeru/lp99a/[id]/` と `public/` の画像を読んでデザインを作った。
 
-`init` はローカルの `specs/<slug>.json` と `designs/<slug>.html` を作るだけで、採番しない。HTMLの `{{LREACH_FORM}}` 1か所を `renderPublishedPage` が共通フォームと送信用JavaScriptに置き換える。
+`init` はローカルの `specs/<slug>.json` と `designs/<slug>.html` を作るだけで、採番しない。生成したHTMLを直接開くと、ローカル画像と送信不能なフォーム見本を表示する。公開時は `{{LREACH_FORM}}` 1か所を `renderPublishedPage` が共通フォームと送信用JavaScriptに置き換える。
 
-`issue` は同じ `.lp-publish/<slug>.json` の依頼ID・途中状態を使い続ける。登録だけ失敗した場合は既存URLの登録から再開し、番号やデプロイを増やさない。Git自動デプロイが接続されたプロジェクトでは停止し、main pushだけで意図せずProductionになることを防ぐ。この操作の到達点はPreviewであり、Production昇格・ドメイン切替は別の操作。
+`issue` は同じ `.lp-publish/<slug>.json` の依頼ID・途中状態を使い続ける。登録だけ失敗した場合は既存URLの登録から再開し、番号やデプロイを増やさない。Git自動デプロイが接続されたプロジェクトでは停止し、main pushだけで意図しない二重デプロイが起きることを防ぐ。明示的な「デプロイして」の指示で実行し、Vercel Productionへデプロイして公開用ドメイン `https://lreach-lp-marketing.vercel.app` をbackendに `published` で登録する。CLIはProductionの送信ガード設定、backend接続先、広告計測設定、公開ドメインとProductionターゲットを検査する。
 
 発行CLIは既存のVercelログイン権限を使ってLPプロジェクトのDevelopment設定から発行専用トークンだけをメモリ上に読み込む。管理APIの既定接続先は `https://lreach-backend.vercel.app`。ブラウザには発行トークン・DBキー・Slackトークンを渡さない。
 

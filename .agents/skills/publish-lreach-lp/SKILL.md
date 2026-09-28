@@ -1,6 +1,6 @@
 ---
 name: publish-lreach-lp
-description: LreachのLP発行Skillの旧名。新規LPのテンプレート作成・採番・広告タグ設定・Preview発行にはcreate-lpを使う。
+description: LreachのLP発行Skillの旧名。新規LPのHTML作成・採番・広告タグ設定・明示指示によるProduction公開にはcreate-lpを使う。
 ---
 
 # Lreach LPを発行する

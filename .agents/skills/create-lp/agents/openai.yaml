@@ -1,4 +1,4 @@
 interface:
   display_name: "LP作成"
-  short_description: "採番・GTM・LINEを選択肢で設定し、デザイン作成からVercel Preview発行まで進める"
+  short_description: "採番・GTM・LINEを設定してHTMLを作成し、明示指示でVercel本番公開する"
   default_prompt: "$create-lp を使い、採番方法・GTMタグ・LINEシナリオを選択肢で順番に聞いてから、デザインの進め方を選んでLPを作成してください。"
