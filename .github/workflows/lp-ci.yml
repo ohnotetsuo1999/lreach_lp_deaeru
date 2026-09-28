@@ -1,0 +1,21 @@
+name: LP build
+on: [pull_request]
+permissions:
+  contents: read
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: '20.19.0'
+          cache: npm
+      - run: npm ci --legacy-peer-deps
+      - run: node --check scripts/lp/publish.mjs && node --check scripts/lp/render.mjs
+      - run: npm run build
+        env:
+          NEXT_PUBLIC_LREACH_BACKEND_URL: http://127.0.0.1:4320
+          NEXT_PUBLIC_API_BASE_URL: /api
+          NEXT_PUBLIC_DEVELOP_E2E_MODE: 'true'
+          NEXT_PUBLIC_DEAERU_GATEWAY_URL: https://lreach-gateway-dev.vercel.app/

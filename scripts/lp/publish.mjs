@@ -103,6 +103,13 @@ if (action === "options") {
   if (!state.generated) throw Error("Run prepare first");
   const sha = run("git", ["rev-parse", "HEAD"]);
   if (action === "deploy") {
+    // Vercelは新規プロジェクトの初回をProduction扱いにすることがある。
+    // 管理者がPreviewを初期化したプロジェクトだけ、マーケターの自動発行を許可する。
+    const link=JSON.parse(await readFile(resolve('.vercel/project.json'),'utf8'));
+    if(!/^prj_[A-Za-z0-9]+$/.test(link.projectId)||!/^team_[A-Za-z0-9]+$/.test(link.orgId))throw Error('Invalid Vercel project link');
+    const project=JSON.parse(run('vercel',['api','/v9/projects/'+link.projectId,'--scope',link.orgId,'--raw']));
+    if(project.targets?.preview?.readyState!=='READY')throw Error('Administrator must initialize and verify a Preview deployment first');
+
     if (state.deploymentStarted && !state.url)
       throw Error(
         "Previous deployment result is unknown. Inspect Vercel and record the actual URL in state; do not redeploy blindly."
