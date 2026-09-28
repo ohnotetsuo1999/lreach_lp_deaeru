@@ -351,3 +351,17 @@ test("Node SDK traffic through https.request is blocked before socket I/O", asyn
     uninstall();
   }
 });
+
+test("LP Preview relay allows only the configured backend submission POST", () => {
+  const origin = "https://lreach-backend-abc-lreach-app.vercel.app";
+  const env = { LREACH_DEPLOY_ENV:"staging", VERCEL_ENV:"preview", OUTBOUND_DELIVERY_ENABLED:"false", OUTBOUND_DISABLED:"true", LP_PREVIEW_BACKEND_PROXY_ENABLED:"true", LP_PREVIEW_BACKEND_ORIGIN:origin };
+  const url = origin + "/api/lp/v1/submissions/";
+  assert.doesNotThrow(() => assertOutboundRequestAllowed(url,"POST",env));
+  for (const target of [origin+"/api/slack/send/",origin+"/api/lp/admin/reserve/",url+"extra",url+"?target=other", "https://other.vercel.app/api/lp/v1/submissions/", "https://slack.com/api/chat.postMessage", "https://api.line.me/v2/bot/message/push"]) {
+    assert.throws(() => assertOutboundRequestAllowed(target,"POST",env), OutboundDeliveryBlockedError);
+  }
+  for (const change of [{LP_PREVIEW_BACKEND_PROXY_ENABLED:"false"},{LREACH_DEPLOY_ENV:"production"},{VERCEL_ENV:"production"},{OUTBOUND_DISABLED:"false"},{LP_PREVIEW_BACKEND_ORIGIN:origin+"/api"},{LP_PREVIEW_BACKEND_ORIGIN:"https://lreach-lp.vercel.app"}]) {
+    assert.throws(() => assertOutboundRequestAllowed(url,"POST",{...env,...change}), OutboundDeliveryBlockedError);
+  }
+  assert.throws(() => assertOutboundRequestAllowed(url,"DELETE",env), OutboundDeliveryBlockedError);
+});

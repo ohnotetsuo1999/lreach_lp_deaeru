@@ -190,11 +190,29 @@ function isExplicitlyAllowedInfrastructureHost(hostname) {
   );
 }
 
+// A separate marketing LP Preview may relay answers to its dedicated backend.
+// This is not a general external-delivery opt-in: only this exact POST is allowed.
+function isLpPreviewSubmissionEndpoint(url, method, environment) {
+  if (environment.LP_PREVIEW_BACKEND_PROXY_ENABLED !== "true" ||
+      environment.LREACH_DEPLOY_ENV !== "staging" || environment.VERCEL_ENV !== "preview" ||
+      environment.OUTBOUND_DELIVERY_ENABLED !== "false" || environment.OUTBOUND_DISABLED !== "true" ||
+      method.toUpperCase() !== "POST") return false;
+  const backend = parseUrl(environment.LP_PREVIEW_BACKEND_ORIGIN);
+  if (!backend || backend.protocol !== "https:" || backend.username || backend.password ||
+      backend.pathname !== "/" || backend.search || backend.hash ||
+      !/^lreach-backend-[a-z0-9-]+\.vercel\.app$/.test(backend.hostname)) return false;
+  return url.origin === backend.origin && !url.username && !url.password && !url.search && !url.hash &&
+    url.pathname === "/api/lp/v1/submissions/";
+}
+
 export function classifyOutboundRequest(input, method = "GET", environment = process.env) {
   const url = parseUrl(input);
   if (!url) return { outbound: false, provider: null };
 
   const hostname = url.hostname.toLowerCase();
+  if (isLpPreviewSubmissionEndpoint(url, String(method), environment)) {
+    return { outbound: false, provider: null };
+  }
   if (isDevelopInternalEndpoint(url, environment)) {
     return { outbound: true, provider: "develop-internal-api" };
   }

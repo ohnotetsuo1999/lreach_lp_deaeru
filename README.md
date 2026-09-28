@@ -60,3 +60,5 @@ flowchart LR
 ### 保護されたPreviewの回答API接続
 
 新規発行LPの回答は `/api/lp/v1/submissions/` のサーバー側プロキシを通します。管理者がVercel Preview環境の `LREACH_BACKEND_PROTECTION_BYPASS` にバックエンドのAutomation Bypassを設定してください。ブラウザ用変数には設定しません。採番CLIでは同じ秘密情報を `LP_PUBLISH_PROTECTION_BYPASS` に設定します。どちらもリポジトリへ保存しません。旧LPの互換APIと本番ドメインの移管は別途検証します。
+
+Previewで回答保存を検証するときは、管理者が `LP_PREVIEW_BACKEND_PROXY_ENABLED=true` と `LP_PREVIEW_BACKEND_ORIGIN=<backend Previewのorigin>` を設定します。`LREACH_DEPLOY_ENV=staging`、`OUTBOUND_DELIVERY_ENABLED=false`、`OUTBOUND_DISABLED=true` を維持します。この例外は指定したバックエンドの `/api/lp/v1/submissions/` へのPOSTだけで、Slack・LINE・他APIへの送信を許可しません。
