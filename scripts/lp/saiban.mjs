@@ -177,6 +177,13 @@ if (action === "templates") {
       throw Error(
         "前回のデプロイ結果が不明です。Vercelで確認し、同じ状態ファイルから登録を再開してください。"
       );
+    git("fetch", "origin", "main");
+    const head = git("rev-parse", "HEAD");
+    const remoteHead = git("rev-parse", "FETCH_HEAD");
+    if (head !== remoteHead && head !== state?.publicationCommit)
+      throw Error(
+        "mainがリモートと一致しません。未pushの別作業や更新を確認してから再開してください。"
+      );
     call("check");
     // 前回の生成に成功済みなら再生成せず、コミット以降から再開する。
     if (!state?.generated) {
@@ -228,6 +235,8 @@ if (action === "templates") {
       const files = dirty.map((entry) => entry.slice(3));
       git("add", "--", ...files);
       git("commit", "-m", `${code}のLPを発行`);
+      state.publicationCommit = git("rev-parse", "HEAD");
+      await writeFile(statePath, JSON.stringify(state, null, 2) + "\n");
     }
     // 強制pushはしない。競合時は番号を取り直さず取り込み・検証後に再開する。
     git("push", "origin", "main");

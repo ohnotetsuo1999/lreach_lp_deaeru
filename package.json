@@ -101,5 +101,8 @@
     "eslint-plugin-react": "^7.34.1",
     "eslint-plugin-tailwindcss": "^3.17.0",
     "prettier": "^3.2.5"
+  },
+  "engines": {
+    "node": "24.x"
   }
 }

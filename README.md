@@ -4,7 +4,7 @@
 
 ## 使い方
 
-1. `npm ci --legacy-peer-deps` で依存をインストールする。
+1. Node.js 24で `npm ci --legacy-peer-deps` で依存をインストールする。
 2. `.env.example` を参考にLreach backendのURLを設定する。DBやSlackのキーは置かない。
 3. `npm run dev` で表示を確認する。
 4. Codex／Claudeで「lp-saibanを使って、テンプレートから新しいLPを発行して」と依頼する。

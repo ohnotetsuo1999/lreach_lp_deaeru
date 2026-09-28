@@ -230,3 +230,16 @@ test("同じLPを同時に発行しようとしたら採番せず停止する", 
   );
   assert.equal(f.calls.reserve.length, 0);
 });
+
+test("未pushの別コミットを新LPと一緒にpushしない", async (t) => {
+  const f = await fixture(t);
+  await writeFile(join(f.root, "another.txt"), "別の実装");
+  await f.git("add", "another.txt");
+  await f.git("commit", "-m", "別作業");
+  await f.run("init", ".lp-publish/draft.json");
+  await assert.rejects(
+    f.run("issue", "specs/career-test.json"),
+    /mainがリモートと一致しません/
+  );
+  assert.equal(f.calls.reserve.length, 0);
+});
