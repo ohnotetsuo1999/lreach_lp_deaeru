@@ -1,5 +1,8 @@
 name: LP build
-on: [pull_request]
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
 permissions:
   contents: read
 jobs:
