@@ -147,7 +147,6 @@ else{fs.appendFileSync('deploy.fixture','deploy\\n');if(mode==='uncertain'){cons
     JSON.stringify({
       slug: "career-test",
       title: "新しい相談LP",
-      inflow: "meta",
       template: "career-cards",
       lineScenarioKey: "none",
       tagIds: ["11111111-1111-4111-8111-111111111111"],
@@ -162,6 +161,8 @@ else{fs.appendFileSync('deploy.fixture','deploy\\n');if(mode==='uncertain'){cons
 test("lp-saibanでテンプレート→採番→タグ→main push→Preview登録を実行し、登録失敗から再開する", async (t) => {
   const f = await fixture(t);
   await f.run("init", ".lp-publish/draft.json");
+  const spec = JSON.parse(await readFile(join(f.root, "specs/career-test.json"), "utf8"));
+  assert.equal(Object.hasOwn(spec, "inflow"), false);
   await assert.rejects(f.run("init", ".lp-publish/draft.json"));
   f.calls.failRegistration = true;
   await assert.rejects(f.run("issue", "specs/career-test.json"));

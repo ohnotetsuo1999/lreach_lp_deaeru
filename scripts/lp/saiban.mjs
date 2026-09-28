@@ -98,8 +98,6 @@ if (action === "templates") {
     draft.title.length > 120
   )
     throw Error("LP名を120文字以内で指定してください。");
-  if (!/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(draft.inflow))
-    throw Error("流入IDを指定してください。");
   if (!Array.isArray(draft.tagIds))
     throw Error("tagIdsを配列で指定してください（タグなしは空配列）。");
   const lineScenarioKey = draft.lineScenarioKey ?? "lp99y";
@@ -133,7 +131,6 @@ if (action === "templates") {
     slug,
     title: draft.title,
     code,
-    inflow: draft.inflow,
     tagIds: draft.tagIds,
     lineScenarioKey,
     design: `designs/${slug}.html`,

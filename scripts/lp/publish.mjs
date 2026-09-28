@@ -88,8 +88,6 @@ if (action === "check") {
   console.log(JSON.stringify(await api("options"), null, 2));
 } else if (action === "prepare") {
   const spec = JSON.parse(await readFile(resolve(input), "utf8"));
-  if (!/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(spec.inflow))
-    throw Error("Invalid inflow");
   const statePath = resolve(".lp-publish", spec.slug + ".json");
   if (!/^[a-z0-9-]{1,60}$/.test(spec.slug)) throw Error("Invalid slug");
   let state;
@@ -121,7 +119,7 @@ if (action === "check") {
   // 入力不備で番号だけ消費しないよう、予約前に検査する。
   renderPublishedPage(
     { design, tags, code: spec.code || "lp100a", title: spec.title },
-    spec.inflow,
+    "001", // 描画検証用の例。発行ルートは任意の[id]を受け取る。
     { tracking: true }
   );
   const reserved = await api("reserve", {
@@ -171,7 +169,8 @@ if (action === "check") {
   console.log(
     JSON.stringify({
       code,
-      path: `/deaeru/${code}/${spec.inflow}/`,
+      routePattern: `/deaeru/${code}/[id]/`,
+      previewPath: `/deaeru/${code}/001/`,
       state: statePath,
     })
   );
@@ -239,9 +238,11 @@ if (action === "check") {
   });
   state.registered = true;
   await save(statePath, state);
-  console.log(
-    state.url + `/deaeru/${state.reservation.lp_code}/${state.spec.inflow}/`
-  );
+  console.log(JSON.stringify({
+    code: state.reservation.lp_code,
+    routePattern: state.url + `/deaeru/${state.reservation.lp_code}/[id]/`,
+    previewUrl: state.url + `/deaeru/${state.reservation.lp_code}/001/`,
+  }, null, 2));
 } else
   throw Error(
     "Usage: node scripts/lp/publish.mjs options | prepare spec.json | deploy .lp-publish/slug.json | register .lp-publish/slug.json"

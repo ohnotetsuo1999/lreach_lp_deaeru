@@ -49,7 +49,6 @@ test("発行CLIが選択→同じ番号を予約→ルート生成→Preview台�
         slug: "test",
         title: "新しいLP",
         code: null,
-        inflow: "meta",
         tagIds: [],
         design: "design.html",
       })
@@ -75,6 +74,25 @@ test("発行CLIが選択→同じ番号を予約→ルート生成→Preview台�
     );
     assert.match(source, /issued\/lp100a.json/);
     assert.match(source, /LP_AD_TRACKING_ENABLED/);
+    // 生成した実ルートを実行し、末尾IDを固定せず回答キーへ反映することを確認。
+    await writeFile(join(root, "route-smoke.mjs"), `
+import assert from 'node:assert/strict';
+import {readFile,writeFile} from 'node:fs/promises';
+import {stripTypeScriptTypes} from 'node:module';
+const source=await readFile('app/deaeru/lp100a/[id]/route.ts','utf8');
+await writeFile('generated-route.mjs',stripTypeScriptTypes(source.replace('@/lib/lp-publication/render.mjs','./lib/lp-publication/render.mjs')));
+const {GET}=await import('./generated-route.mjs');
+for(const id of ['001','meta','campaign-1']){
+ const result=await GET(new Request('https://fixture.invalid/deaeru/lp100a/'+id+'/'),{params:Promise.resolve({id})});
+ assert.equal(result.status,200);
+ const html=await result.text();
+ assert.ok(html.includes('deaeru-lp100a-'+id));
+ assert.ok(!html.includes('deaeru-lp100a-direct'));
+}
+assert.equal((await GET(new Request('https://fixture.invalid'),{params:Promise.resolve({id:'../escape'})})).status,404);
+`);
+    await exec(process.execPath, ["route-smoke.mjs"], {cwd:root,env});
+
     await exec("git", ["init", "-b", "codex/test"], { cwd: root });
     await exec("git", ["add", "."], { cwd: root });
     await exec(
