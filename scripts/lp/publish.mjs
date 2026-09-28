@@ -107,6 +107,8 @@ if (action === "check") {
     throw Error(
       "既存LP番号の棚卸しが未完了です。管理者が台帳を初期化してください。"
     );
+  if (options.numbering?.policy !== "suffix-v1")
+    throw Error("backendの採番方式が未更新です。LP100A→LP100B方式のmigrationとAPI反映後、同じ仕様・依頼IDで再開してください。");
   const lineScenarioKey = spec.lineScenarioKey ?? "lp99y";
   if (!options.lineScenarios?.some(s => s.key === lineScenarioKey))
     throw Error("Unknown/inactive LINE scenario");

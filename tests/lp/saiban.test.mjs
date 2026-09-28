@@ -43,6 +43,7 @@ async function fixture(t) {
     registration: 0,
     failRegistration: false,
     inventory: true,
+    numbering: "suffix-v1",
     ready: true,
     uncertain: false,
   };
@@ -68,6 +69,7 @@ async function fixture(t) {
             },
           ],
           readiness: { inventoryComplete: calls.inventory },
+          numbering: { policy: calls.numbering },
         })
       );
     else if (req.url.includes("/reserve/")) {
@@ -258,4 +260,12 @@ test("手動指定100Aをlp100aへ正規化し、自動採番へ切り替えずA
   await f.run("issue", "specs/career-test.json");
   assert.equal(f.calls.reserve.length,1);
   assert.equal(f.calls.reserve[0].code,"lp100a");
+});
+
+test("旧採番backendでは番号を予約しない", async (t) => {
+  const f = await fixture(t);
+  await f.run("init", ".lp-publish/draft.json");
+  f.calls.numbering = "legacy-numeric";
+  await assert.rejects(f.run("issue", "specs/career-test.json"), /採番方式が未更新/);
+  assert.equal(f.calls.reserve.length, 0);
 });

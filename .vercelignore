@@ -3,3 +3,6 @@
 .lp-publish
 .git
 tests
+
+# Local design preview; excluded from publication
+public/lp99a-inspired-local.html

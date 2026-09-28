@@ -6,7 +6,7 @@
 
 - LP番号はLPを識別する番号。自動採番では `code:null` をbackendへ送り、DBが確定する。
 - 現在の発行APIのマスターは237件で、最大数値部分は99、末尾にLP99ZZがある。
-- 現行DBルールは「既存番号の最大数値部分（最低99）+1」にAを付ける。LP99ZZの次はLP100A、その予約後はLP101A。既存の穴埋めはしない。
+- 修正後のDBルールは `A〜Z → AA〜ZZ → 次の数値のA`。LP99ZZ → LP100A → LP100B と続く。LP100Z → LP100AA、LP100ZZ → LP101A。既存の穴埋めはしない。CLIはAPIの `numbering.policy=suffix-v1` を確認してから予約する。
 - DBは `lp_master` に加え `lp_production_management`、`link_meta`、`lp_sessions` の番号も参照する。同時発行をトランザクションのロックで直列化し、一意制約で重複を防ぐ。同じ依頼IDでの再実行は同じ番号になる。
 - URLは `/deaeru/<LP番号>/[id]/`。末尾はアクセスごとの可変値。`001`、`meta`、`campaign-1` などを同じLPで受け付ける。発行仕様に `inflow` や `direct` は保存しない。
 - 画面確認URLの `/001/` は一例。発行後も他のIDを使える。現在のbackend契約では英小文字・数字と、区切りとしてのハイフンを受け付ける。

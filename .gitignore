@@ -40,3 +40,6 @@ next-env.d.ts
 
 .lp-publish/
 .vercel/
+
+# Local design preview; excluded from publication
+public/lp99a-inspired-local.html
