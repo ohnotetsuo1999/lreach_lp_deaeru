@@ -101,6 +101,9 @@ if (action === "templates") {
     throw Error("流入IDを指定してください。");
   if (!Array.isArray(draft.tagIds))
     throw Error("tagIdsを配列で指定してください（タグなしは空配列）。");
+  const lineScenarioKey = draft.lineScenarioKey ?? "lp99y";
+  if (!["lp99y", "legacy_b", "none"].includes(lineScenarioKey))
+    throw Error("LINE追加後のシナリオを候補から選んでください。");
   let code = null;
   if (draft.code != null && draft.code !== "") {
     if (typeof draft.code !== "string") throw Error("LP番号は100Aのように指定してください。");
@@ -131,6 +134,7 @@ if (action === "templates") {
     code,
     inflow: draft.inflow,
     tagIds: draft.tagIds,
+    lineScenarioKey,
     design: `designs/${slug}.html`,
     media: draft.media || "",
     mediaType: draft.mediaType || "",

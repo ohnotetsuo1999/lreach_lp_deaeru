@@ -58,6 +58,7 @@ async function fixture(t) {
     if (req.url.includes("/options/"))
       res.end(
         JSON.stringify({
+          lineScenarios: [{ key: "lp99y" }, { key: "none" }],
           tags: [
             {
               id: "11111111-1111-4111-8111-111111111111",
@@ -148,6 +149,7 @@ else{fs.appendFileSync('deploy.fixture','deploy\\n');if(mode==='uncertain'){cons
       title: "新しい相談LP",
       inflow: "meta",
       template: "career-cards",
+      lineScenarioKey: "none",
       tagIds: ["11111111-1111-4111-8111-111111111111"],
     })
   );
@@ -170,6 +172,7 @@ test("lp-saibanでテンプレート→採番→タグ→main push→Preview登�
   assert.equal(state.url, "https://fixture.vercel.app");
   assert.equal(f.calls.reserve.length, 1);
   assert.equal(f.calls.reserve[0].code, null);
+  assert.equal(f.calls.reserve[0].lineScenarioKey, "none");
   assert.deepEqual(f.calls.reserve[0].tagIds, [
     "11111111-1111-4111-8111-111111111111",
   ]);

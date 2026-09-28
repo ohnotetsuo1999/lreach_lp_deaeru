@@ -109,6 +109,9 @@ if (action === "check") {
     throw Error(
       "既存LP番号の棚卸しが未完了です。管理者が台帳を初期化してください。"
     );
+  const lineScenarioKey = spec.lineScenarioKey ?? "lp99y";
+  if (!options.lineScenarios?.some(s => s.key === lineScenarioKey))
+    throw Error("Unknown/inactive LINE scenario");
   const tags = spec.tagIds.map((id) => {
     const tag = options.tags.find((t) => t.id === id);
     if (!tag) throw Error("Unknown/inactive tag");
@@ -126,6 +129,7 @@ if (action === "check") {
     code: spec.code || null,
     title: spec.title,
     sourceLpCode: "lp99y",
+    lineScenarioKey,
     tagIds: spec.tagIds,
     media: spec.media,
     mediaType: spec.mediaType,
@@ -156,6 +160,7 @@ if (action === "check") {
     title: spec.title,
     design,
     tags,
+    lineScenarioKey,
   });
   await writeFile(
     resolve(folder, "route.ts"),

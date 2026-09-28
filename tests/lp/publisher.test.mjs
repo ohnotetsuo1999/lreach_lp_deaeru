@@ -20,7 +20,7 @@ test("発行CLIが選択→同じ番号を予約→ルート生成→Preview台�
     const b = raw ? JSON.parse(raw) : null;
     res.setHeader("Content-Type", "application/json");
     if (req.url.includes("/options/"))
-      res.end(JSON.stringify({ tags: [], lps: [] }));
+      res.end(JSON.stringify({ tags: [], lps: [], lineScenarios: [{ key: "lp99y" }] }));
     else if (req.url.includes("/reserve/")) {
       reservations.push(b);
       res.end(JSON.stringify({ lp_code: "lp100a", request_id: b.requestId }));
