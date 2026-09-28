@@ -81,8 +81,8 @@ SlackはDB保存後に送る。通知に失敗しても回答保存は成功と�
 | --- | --- |
 | LP99Aの見た目 | 既存画像を参照して再利用。HTML/画像はマスターAPIから自動取得するものではない |
 | 回答項目 | 新共通フォームは5項目。旧LP99Aには希望年収・希望職種・働き方・転職希望時期もあるため完全一致ではない |
-| 保存 | 新API → backend RPC → users / users_info / lp_sessions。コードとローカルテストで確認。今回の新LPで実データ保存は未実施 |
-| Slack | 新API用の送信実装はあるが、Vercelの本番設定に旧LPのトークン・宛先と `MARKETING_LP_SLACK_ENABLED=true` を登録済み。稼働中backendへの反映は次回デプロイ待ち。名前にテスト／てすとを含む回答は旧LPと同じテストチャンネルへ分岐する修正をPR #1337に追加。本文は共通フォーム5項目の形式 |
+| 保存 | 新API → backend RPC → users / users_info / lp_sessions。本番LP100Aの実フォーム送信で3テーブルへの保存とプロトタイプ表示を確認済み |
+| Slack | backendへ本番設定を反映済み。LP100Aの実フォーム回答が旧LPと同じテスト通知チャンネルへ到着したことを確認。通常宛先は既存設定を継承。本文は共通フォーム5項目の形式 |
 | Previewからの保存 | 現在の既定接続先backendは `LREACH_DEPLOY_ENV=production`。このAPIは `published` 状態かつ登録済みProduction URLからの送信だけ許可するため、Previewを発行しただけでは保存できない |
 | LINE | 保存成功後に `https://gateway.lreach.jp/deaeru` へ案内する設定。Botが台帳のシナリオを参照するコードあり。今回の新LPで実LINEは未確認 |
 | 広告計測 | 選択したタグを使う。`LP_AD_TRACKING_ENABLED=true` かつVercel Productionのときだけ出力。Previewでは無効 |
@@ -93,13 +93,26 @@ SlackはDB保存後に送る。通知に失敗しても回答保存は成功と�
 ## 今回の検証
 
 - 発行CLI等の21テストが成功。流入ID未指定での作成、生成ルートの `001` / `meta` / `campaign-1` での回答キー切替、再開・二重発行防止を含む。
-- backendの採番SQLを一時的なローカルPostgreSQLへ適用。LP99ZZ → LP100A、同じ依頼の再実行、5件の同時発行、既存制作台帳の106Aを避けた107Aの採番を確認。本番DBは変更していない。
-- Vercel Previewプロジェクトのチェックが成功。新LPの発行・Production公開・外部通知は未実施。
+- backendの採番SQLを一時的なローカルPostgreSQLへ適用。LP99ZZ → LP100A、同じ依頼の再実行、5件の同時発行、既存制作台帳の106Aを避けた107Aの採番を確認。この時点の検証はローカルのみ。後続の本番反映結果は下記を参照。
+- Vercel Previewプロジェクトのチェックが成功。当初はPreview準備のみ。後続の公開・実送信結果は下記を参照。
 
 ## 2026-09-29 の検証状況
 
 - backend 39テスト・型検査成功。
 - 65本のmigrationを空のローカルDBに適用し、生成スキーマと29本のpgTAPテストを検証。全件成功。
 - 本番DBに `lp_sessions_answers_trigger` と `trigger_create_call_target_from_lp_session` があることを確認。
-- 実回答の保存、Slack到着、管理画面のテスト行表示、同じ受付IDの再送確認は未実施。
-- 本体の修正PR: https://github.com/ohnotetsuo1999/lreach/pull/1337 。develop/main統合・本番DBとbackend反映・新LPの本番受付の確認待ち。
+- 本体の修正PR #1337 / #1339をdevelop・mainへ統合。DB構造取得が120秒で2回タイムアウトしたため、取得だけを300秒へ延長する #1340 / #1341も統合。隔離・構造照合・本番適用の合格条件は維持。
+- main CI [36453143415](https://github.com/ohnotetsuo1999/lreach/actions/runs/36453143415) と本番DB適用 [36454509336](https://github.com/ohnotetsuo1999/lreach/actions/runs/36454509336) が成功。採番migration `20260928154738` と `numbering.policy=suffix-v1` を本番反映。
+- 自動採番結果は **LP100A**。本番DB関数で `LP100A → LP100B` も読み取り専用で確認。
+- 公開URL: https://lreach-lp-marketing.vercel.app/deaeru/lp100a/001/ 。`001` は表示確認例。`meta` とテスト用 `e2e-20260929` でも動的なLPキーを確認。
+- LPソース: `f027f241743df05132c8cd4565f7cbfab9c41146`。本番デプロイ: `dpl_BsBtjg3gE3LybvVtNtLKcYGmhEUm`。backend: `dpl_B6L7F9PM23tzBHRc63zEf2W7AqoL`。
+- LP側Productionに `LREACH_DEPLOY_ENV=production`・`OUTBOUND_DELIVERY_ENABLED=true`・`OUTBOUND_DISABLED=false` を登録。初回の502は送信ガードがbackendへのPOSTを止めたもの。DB保存0件を確認し、設定反映後に同じ受付IDで再送。
+- **2026-09-29 02:13:50 JST**、公開LPのCTAから `LP受付テスト20260929` を入力・送信。回答受付IDは `b200f32b-579e-4497-9d71-c32cc866d99d`、ユーザーIDは `89377de1-476b-4ca8-ab0b-c87b5c969e58`。
+- `lp_sessions`・`users`・`users_info` に各1件。回答5項目、`lp_key=deaeru-lp100a-e2e-20260929`、クエリ付き流入URLの保存を確認。
+- **02:13:51 JST**、旧LPと同じ `#テスト通知チャンネル`（`C0AGF84H8AC`）で受付IDと回答内容が一致する通知を確認。
+- 本番プロトタイプの「流入日（LP回答日）」でテストユーザー非表示をOFFにし、名前で絞り込み。同じ回答1件を画面で確認。
+- 同じ受付ID・同じ内容を再送し、HTTP 200・同一ユーザーID・`notificationStatus=not_repeated` を確認。その後もDB各1件、Slack通知1件のまま。
+- GatewayのLINE引き継ぎ用QR画面への遷移を確認。実際の友だち追加・LINEシナリオ配信は未実施。
+- Productionで指定GTM `GTM-W7S9ZNV8` の出力を確認。広告管理画面でのイベント計測までは未確認。
+
+上記により、今回の完了条件である回答保存・管理画面表示・Slack通知・回答時の流入情報保存・同じ受付IDでの重複防止を本番で確認済み。旧LP99Aの全質問、未回答訪問者を含む行動計測の完全一致はこの確認に含まない。

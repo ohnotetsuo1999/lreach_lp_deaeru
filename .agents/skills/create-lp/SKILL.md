@@ -111,7 +111,7 @@ APIの `lineScenarios` に存在する候補だけを、次の表示名と説明
 
 発行・回答保存・通知・デプロイの構成と確認範囲は、リポジトリルートの `docs/lp-publication-flow.md` を参照する。options APIはLPマスター・タグ・シナリオを返すもので、既存LPのデザインHTMLや画像を取得するものではない。既存LPを参照する場合はリポジトリのページ・画像を確認する。共通フォームは99Y互換の5項目であり、旧LP固有の全質問・通知・計測の完全複製とは説明しない。
 
-Previewの表示確認と回答受付を区別する。接続先backendがproduction運用の場合、published状態と登録済みProduction URLが必要で、Preview登録だけでは回答保存できない。Slackは専用の有効化設定・宛先・トークンが必要。受付や通知がOFFなら、旧LPと同じく動くと説明せず、実際の設定と未検証範囲を伝える。
+Previewの表示確認と回答受付を区別する。接続先backendがproduction運用の場合、published状態と登録済みProduction URLが必要で、Preview登録だけでは回答保存できない。本番受付ではLP側の `LREACH_DEPLOY_ENV=production`・`OUTBOUND_DELIVERY_ENABLED=true`・`OUTBOUND_DISABLED=false` もProduction環境に明示登録してデプロイする。未設定だと送信ガードがbackendへのPOSTを止める。Previewへ本番送信設定を適用しない。Slackは専用の有効化設定・宛先・トークンが必要。受付や通知がOFFなら、旧LPと同じく動くと説明せず、実際の設定と未検証範囲を伝える。
 
 ## 完了判定
 
