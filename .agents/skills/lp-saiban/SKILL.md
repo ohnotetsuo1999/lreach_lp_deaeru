@@ -17,12 +17,12 @@ LP専用リポジトリのルートで実行する。デザインはこのリポ
 ## 対話から発行まで
 
 1. `npm run lp-saiban -- options` で使用できるタグ・元の挙動を取得する。テンプレートだけの確認は `npm run lp-saiban -- templates`。APIが停止していたら設定不足を報告し、テンプレートのデザイン作業は進める。
-2. LP名、デザイン（シンプル／特徴カード／添付HTML）、媒体・流入ID、番号（自動／指定）、広告タグを決める。指定済み事項は聞き直さない。タグ名だけで広告主が不明なら確認し、適当なIDを選ばない。新規LPの回答・LINEへの遷移は99Y互換。
+2. LP名、デザイン（シンプル／特徴カード／添付HTML）、媒体・流入ID、番号（自動／指定）、広告タグを決める。指定済み事項は聞き直さない。採番方法が未指定なら「自動で採番／LP番号を指定」の2択を提示する。自動は `code:null`、手動は入力された `100A`・`LP100A` 等を指定し、CLIが `lp100a` に正規化する。指定番号が重複した場合は勝手に別番号へ変更せず、別の番号か自動採番を選んでもらう。タグ名だけで広告主が不明なら確認し、適当なIDを選ばない。新規LPの回答・LINEへの遷移は99Y互換。
 3. `.lp-publish/draft-<slug>.json` を作る。例：
    ```json
    {"slug":"spring-career","title":"あなたらしい働き方を、一緒に。","template":"career-cards","content":{"brand":"キャリア相談","lead":"希望の働き方をお聞かせください。"},"code":null,"inflow":"meta","media":"Meta","mediaType":"インハウス","note":"99Y互換","tagIds":[]}
    ```
-   手動採番は `code:"lp100a"`。タグはAPIが返したID。添付HTMLは `designFile` で指定する。Figmaは利用可能な連携からHTML化し、利用不可ならHTMLを使う。
+   手動採番は `code:"lp100a"`。タグはDBを参照したAPIが返す名前・種類・識別子を候補として表示し、選ばれたIDだけを使用する。GTM IDをSkillに固定しない。添付HTMLは `designFile` で指定する。Figmaは利用可能な連携からHTML化し、利用不可ならHTMLを使う。
 4. `npm run lp-saiban -- init .lp-publish/draft-<slug>.json`。生成された `designs/<slug>.html` を利用者の希望に合わせて編集する。フォーム位置は `{{LREACH_FORM}}` を1つ。画像は `public/issued-assets/<slug>/`。デザインに保存処理・通知先・広告タグを直接追加しない。
 5. 見出し・表示内容を確認する。誇大な実績・架空の口コミを足さない。フォームを入れた完成HTMLは `renderPublishedPage` でローカル描画し、PC・スマホで確認する。秘密情報や承認されていない送信先がないことを確かめる。
 6. 発行を依頼されていれば `npm run lp-saiban -- issue specs/<slug>.json`。番号予約・タグ取得・ルート生成・ビルド・対象ファイルだけのコミット・main push・Vercel Preview・台帳へのURL登録を順に実行する。別の変更やステージ済みファイルがあれば巻き込まず停止理由を解消する。強制pushしない。

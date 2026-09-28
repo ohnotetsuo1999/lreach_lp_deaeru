@@ -101,6 +101,12 @@ if (action === "templates") {
     throw Error("流入IDを指定してください。");
   if (!Array.isArray(draft.tagIds))
     throw Error("tagIdsを配列で指定してください（タグなしは空配列）。");
+  let code = null;
+  if (draft.code != null && draft.code !== "") {
+    if (typeof draft.code !== "string") throw Error("LP番号は100Aのように指定してください。");
+    code = "lp" + draft.code.trim().toLowerCase().replace(/^lp/, "");
+    if (!/^lp[0-9]{2,5}[a-z]{1,3}$/.test(code)) throw Error("LP番号は100Aのように指定してください。");
+  }
   const specPath = resolve("specs", slug + ".json"),
     designPath = resolve("designs", slug + ".html");
   for (const path of [specPath, designPath]) {
@@ -122,7 +128,7 @@ if (action === "templates") {
   const spec = {
     slug,
     title: draft.title,
-    code: draft.code || null,
+    code,
     inflow: draft.inflow,
     tagIds: draft.tagIds,
     design: `designs/${slug}.html`,

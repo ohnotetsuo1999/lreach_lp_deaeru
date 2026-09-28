@@ -169,6 +169,7 @@ test("lp-saibanでテンプレート→採番→タグ→main push→Preview登�
   assert.equal(state.reservation.lp_code, "lp100a");
   assert.equal(state.url, "https://fixture.vercel.app");
   assert.equal(f.calls.reserve.length, 1);
+  assert.equal(f.calls.reserve[0].code, null);
   assert.deepEqual(f.calls.reserve[0].tagIds, [
     "11111111-1111-4111-8111-111111111111",
   ]);
@@ -242,4 +243,15 @@ test("未pushの別コミットを新LPと一緒にpushしない", async (t) => 
     /mainがリモートと一致しません/
   );
   assert.equal(f.calls.reserve.length, 0);
+});
+
+test("手動指定100Aをlp100aへ正規化し、自動採番へ切り替えずAPIへ渡す", async (t) => {
+  const f = await fixture(t);
+  const path = join(f.root, ".lp-publish/draft.json");
+  const draft = JSON.parse(await readFile(path, "utf8"));
+  await writeFile(path, JSON.stringify({...draft, code:"100A"}));
+  await f.run("init", ".lp-publish/draft.json");
+  await f.run("issue", "specs/career-test.json");
+  assert.equal(f.calls.reserve.length,1);
+  assert.equal(f.calls.reserve[0].code,"lp100a");
 });
