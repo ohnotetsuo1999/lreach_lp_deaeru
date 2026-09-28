@@ -1,6 +1,6 @@
 # LP発行・回答保存の仕組み
 
-確認日: 2026-09-28。発行コードとbackendの実装、発行APIの読み取り結果、Vercelの現在の設定を確認。新LPの実採番・デプロイ・実回答送信・Slack送信は今回実行していない。
+確認日: 2026-09-29。発行コード・実DBのトリガー・Vercel設定・プロトタイプ管理画面への接続を確認。新LPの実採番・公開・実回答送信・Slack到着の照合は本番反映後に行う。現時点では未完了。
 
 ## LP番号とURL末尾
 
@@ -82,7 +82,7 @@ SlackはDB保存後に送る。通知に失敗しても回答保存は成功と�
 | LP99Aの見た目 | 既存画像を参照して再利用。HTML/画像はマスターAPIから自動取得するものではない |
 | 回答項目 | 新共通フォームは5項目。旧LP99Aには希望年収・希望職種・働き方・転職希望時期もあるため完全一致ではない |
 | 保存 | 新API → backend RPC → users / users_info / lp_sessions。コードとローカルテストで確認。今回の新LPで実データ保存は未実施 |
-| Slack | 新API用の送信実装はあるが、Vercelの現在の本番設定は `MARKETING_LP_SLACK_ENABLED=false`。旧LPの通知経路・本文・宛先をそのまま継承しない |
+| Slack | 新API用の送信実装はあるが、Vercelの本番設定に旧LPのトークン・宛先と `MARKETING_LP_SLACK_ENABLED=true` を登録済み。稼働中backendへの反映は次回デプロイ待ち。名前にテスト／てすとを含む回答は旧LPと同じテストチャンネルへ分岐する修正をPR #1337に追加。本文は共通フォーム5項目の形式 |
 | Previewからの保存 | 現在の既定接続先backendは `LREACH_DEPLOY_ENV=production`。このAPIは `published` 状態かつ登録済みProduction URLからの送信だけ許可するため、Previewを発行しただけでは保存できない |
 | LINE | 保存成功後に `https://gateway.lreach.jp/deaeru` へ案内する設定。Botが台帳のシナリオを参照するコードあり。今回の新LPで実LINEは未確認 |
 | 広告計測 | 選択したタグを使う。`LP_AD_TRACKING_ENABLED=true` かつVercel Productionのときだけ出力。Previewでは無効 |
@@ -92,6 +92,14 @@ SlackはDB保存後に送る。通知に失敗しても回答保存は成功と�
 
 ## 今回の検証
 
-- 発行CLI等の20テストが成功。流入ID未指定での作成、生成ルートの `001` / `meta` / `campaign-1` での回答キー切替、再開・二重発行防止を含む。
+- 発行CLI等の21テストが成功。流入ID未指定での作成、生成ルートの `001` / `meta` / `campaign-1` での回答キー切替、再開・二重発行防止を含む。
 - backendの採番SQLを一時的なローカルPostgreSQLへ適用。LP99ZZ → LP100A、同じ依頼の再実行、5件の同時発行、既存制作台帳の106Aを避けた107Aの採番を確認。本番DBは変更していない。
 - Vercel Previewプロジェクトのチェックが成功。新LPの発行・Production公開・外部通知は未実施。
+
+## 2026-09-29 の検証状況
+
+- backend 39テスト・型検査成功。
+- 65本のmigrationを空のローカルDBに適用し、生成スキーマと29本のpgTAPテストを検証。全件成功。
+- 本番DBに `lp_sessions_answers_trigger` と `trigger_create_call_target_from_lp_session` があることを確認。
+- 実回答の保存、Slack到着、管理画面のテスト行表示、同じ受付IDの再送確認は未実施。
+- 本体の修正PR: https://github.com/ohnotetsuo1999/lreach/pull/1337 。develop/main統合・本番DBとbackend反映・新LPの本番受付の確認待ち。
