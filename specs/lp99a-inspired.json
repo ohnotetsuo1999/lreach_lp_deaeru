@@ -1,0 +1,13 @@
+{
+  "slug": "lp99a-inspired",
+  "title": "出会えるエージェント｜エージェント診断",
+  "code": null,
+  "tagIds": [
+    "e728f48b-b6c0-5cf9-a7cc-b85f02393989"
+  ],
+  "lineScenarioKey": "lp99y",
+  "design": "designs/lp99a-inspired.html",
+  "media": "",
+  "mediaType": "",
+  "note": "LP99Aのデザインを参照。99Y互換の回答フォーム・LINEシナリオを使用"
+}
