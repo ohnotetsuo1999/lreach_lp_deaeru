@@ -1,0 +1,13 @@
+{
+  "slug": "lp01a-inspired",
+  "title": "出会えるエージェント診断",
+  "code": null,
+  "tagIds": [
+    "e728f48b-b6c0-5cf9-a7cc-b85f02393989"
+  ],
+  "lineScenarioKey": "lp99y",
+  "design": "designs/lp01a-inspired.html",
+  "media": "",
+  "mediaType": "",
+  "note": "deaeru/lp01aのデザインを参照。共通5項目フォームと99YのLINEシナリオを使用"
+}
